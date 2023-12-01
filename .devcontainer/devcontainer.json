@@ -1,0 +1,40 @@
+{
+    "name": "Java Development Container",
+    "dockerFile": "../Dockerfile",
+    "context": "..",
+    "build": {
+        "args": {
+            "USERNAME": "${localEnv:USER}",
+            "USERID": "1000" // must match the output of `$ id`
+        }
+    },
+    "mounts": [
+        "source=/home/${localEnv:USER}/.m2,target=/home/${localEnv:USER}/.m2,type=bind",
+        "source=/home/${localEnv:USER}/.ssh,target=/home/${localEnv:USER}/.ssh,type=bind,consistency=cached,readonly"
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "vscjava.vscode-java-pack", // Java Extension Pack
+                "redhat.java", // Language Support for Java(TM) by Red Hat
+                "vscjava.vscode-java-debug", // Debugger for Java
+                "vscjava.vscode-java-dependency", // Java Dependency Viewer
+                "vscjava.vscode-java-test", // Java Test Runner
+                "vscjava.vscode-maven", // Maven for Java
+                // "pivotal.vscode-spring-boot", // Spring Boot Extension Pack
+                // "sonarsource.sonarlint-vscode", // SonarLint
+                "VisualStudioExptTeam.vscodeintellicode" // Visual Studio IntelliCode
+                // "GabrielBB.vscode-lombok" // Lombok Annotations Support for VS Code
+            ],
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "terminal.integrated.profiles.linux": {
+                    "bash": {
+                        "path": "/bin/bash"
+                    }
+                }
+            }
+        }
+    },
+    "remoteUser": "${localEnv:USER}"
+}
