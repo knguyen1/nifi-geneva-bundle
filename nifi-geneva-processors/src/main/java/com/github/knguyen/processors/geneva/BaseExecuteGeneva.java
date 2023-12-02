@@ -27,9 +27,10 @@ import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.processors.standard.ssh.SSHClientProvider;
 import org.apache.nifi.processors.standard.ssh.StandardSSHClientProvider;
 import org.apache.nifi.expression.ExpressionLanguageScope;
-
+import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processors.standard.util.FileTransfer;
 import org.apache.nifi.processors.standard.util.SFTPTransfer;
+import org.apache.commons.lang3.tuple.Pair;
 
 import com.github.knguyen.processors.ssh.SSHCommandExecutor;
 import com.github.knguyen.processors.utils.CustomValidators;
@@ -47,7 +48,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
 
     static final AllowableValue USERNAME_PASSWORD_STRATEGY = new AllowableValue("password-authentication",
             "Password Authentication",
-            "Use your username and password as SSH credentials.  Note this is (usually) no the same username and password for your `runrep` utility.");
+            "Use username and password for SSH authentication. Be aware that these credentials are generally different from those used for the `runrep` utility.");
     static final AllowableValue IDENTITY_FILE_STRATEGY = new AllowableValue("identity-file", "Identity File",
             "Use an identity file to log in to SSH.  The file should be accessible by your NiFi installation and have appropriate permissions.  The identify file is assumed to be password-less and in RSA format, where applicable.");
 
@@ -69,15 +70,13 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             .defaultValue(USERNAME_PASSWORD_STRATEGY.getValue()).addValidator(Validator.VALID).required(true).build();
 
     static final PropertyDescriptor USERNAME = new PropertyDescriptor.Builder()
-            .fromPropertyDescriptor(FileTransfer.USERNAME)
-            .description(
-                    "The username on the host to connect as.  Note that this is (usually) not the same as your runrep username.")
+            .fromPropertyDescriptor(FileTransfer.USERNAME).description("The username on the host to connect as.")
             .build();
 
     static final PropertyDescriptor PASSWORD = new PropertyDescriptor.Builder()
             .fromPropertyDescriptor(FileTransfer.PASSWORD)
             .description(
-                    "The password to connect to the host.  Note that this is (usually) not the same as your runrep password.  This property is ignored if `Identify File` is chosen as the authentication strategy.")
+                    "The password to connect to the host.  This property is ignored if `Identify File` is chosen as the authentication strategy.")
             .dependsOn(SSH_AUTHENTICATION_STRATEGY, USERNAME_PASSWORD_STRATEGY).build();
 
     static final PropertyDescriptor PRIVATE_KEY_PATH = new PropertyDescriptor.Builder()
@@ -229,9 +228,12 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         return baseDescriptors;
     }
 
+    protected abstract List<PropertyDescriptor> additionalDescriptors();
+
     @Override
     protected void init(final ProcessorInitializationContext context) {
         descriptors = commonDescriptors();
+        descriptors.addAll(additionalDescriptors());
         descriptors = Collections.unmodifiableList(descriptors);
 
         relationships = new HashSet<>();
@@ -253,4 +255,45 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
     public RemoteCommandExecutor createExecutor(final ProcessContext context) {
         return new SSHCommandExecutor(context, getLogger());
     }
+
+    /**
+     * Generates and returns the initialization string for the Runrep command. This method constructs the string used to
+     * initialize the Runrep utility, specifying an empty list file and beginning a command block. The returned string
+     * is typically used as the first part of a script or command sequence for interacting with the Runrep utility.
+     *
+     * @return A {@link String} representing the initialization command for Runrep, indicating the start of a command
+     *         sequence with an empty list file.
+     */
+    protected String getRunrepInitStr() {
+        return "runrep -f empty.lst -b << EOF";
+    }
+
+    /**
+     * Constructs and returns a command string for executing the Geneva utility along with its obfuscated version. This
+     * method extracts necessary credentials and other parameters from the given {@link ProcessContext} and
+     * {@link FlowFile}, formats them into a Geneva utility command, and also creates an obfuscated version of the
+     * command where sensitive information such as the password is masked.
+     *
+     * @param context
+     *            The processing context to obtain property values related to the Geneva utility.
+     * @param flowfile
+     *            The flow file providing additional attribute expressions for command construction.
+     *
+     * @return A {@link Pair} of {@link String}s, where the first element is the actual command and the second element
+     *         is the obfuscated version of the command with sensitive information masked.
+     */
+    protected Pair<String, String> getRunrepConnectStr(final ProcessContext context, final FlowFile flowfile) {
+        final String genevaUser = context.getProperty(RUNREP_USERNAME).evaluateAttributeExpressions(flowfile)
+                .getValue();
+        final String genevaPassword = context.getProperty(RUNREP_PASSWORD).evaluateAttributeExpressions(flowfile)
+                .getValue();
+        final String genevaAga = context.getProperty(GENEVA_AGA).evaluateAttributeExpressions(flowfile).getValue();
+
+        final String command = String.format("connect %s/%s -k %s", genevaUser, genevaPassword, genevaAga);
+        final String obfuscatedCommand = String.format("connect %s/%s -k %s", genevaUser, "*********", genevaAga);
+
+        return Pair.of(command, obfuscatedCommand);
+    }
+
+    protected abstract String constructReportParameters(final ProcessContext context, final FlowFile flowfile);
 }

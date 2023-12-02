@@ -1,12 +1,12 @@
 package com.github.knguyen.processors.geneva;
 
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
-import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
@@ -19,12 +19,8 @@ public class ExecuteGenevaRSL extends BaseExecuteGeneva {
             .addValidator(StandardValidators.NON_BLANK_VALIDATOR).build();
 
     @Override
-    protected void init(final ProcessorInitializationContext context) {
-        super.init(context);
-
-        var commonDesc = commonDescriptors();
-        commonDesc.add(RSL_NAME);
-        descriptors = Collections.unmodifiableList(commonDesc);
+    protected List<PropertyDescriptor> additionalDescriptors() {
+        return Arrays.asList(RSL_NAME);
     }
 
     @Override

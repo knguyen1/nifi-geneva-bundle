@@ -122,7 +122,7 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
     }
 
     @Override
-    public void execute(final String command, final FlowFile originalFlowFile, final ProcessSession processSession)
+    public void execute(final ICommand command, final FlowFile originalFlowFile, final ProcessSession processSession)
             throws IOException, GenevaException {
         final SSHClient client = this.getSSHClient(originalFlowFile);
 
@@ -134,13 +134,13 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
         }
 
         try (final Session session = client.startSession()) {
-            final Command cmd = session.exec(command);
+            final Command cmd = session.exec(command.getCommand());
 
             // Nested try-with-resources for BufferedReader and InputStreamReader
             try (BufferedReader stdErrReader = new BufferedReader(new InputStreamReader(cmd.getErrorStream()))) {
                 String line;
                 while (StringUtils.isNotBlank(line = stdErrReader.readLine())) {
-                    this.maybeRaiseException("Failed to run command in runrep", command, line);
+                    this.maybeRaiseException("Failed to run command in runrep", command.getObfuscatedCommand(), line);
 
                     // Break the loop if the exit status is available
                     if (cmd.getExitStatus() != null) {
