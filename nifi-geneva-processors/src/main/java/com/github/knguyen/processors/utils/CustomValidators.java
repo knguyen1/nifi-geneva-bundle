@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 import org.apache.nifi.components.ValidationContext;
 import org.apache.nifi.components.ValidationResult;
 import org.apache.nifi.components.Validator;
+import org.apache.nifi.processor.util.StandardValidators;
 
 public class CustomValidators {
     private static boolean isValidHostname(String hostname) {

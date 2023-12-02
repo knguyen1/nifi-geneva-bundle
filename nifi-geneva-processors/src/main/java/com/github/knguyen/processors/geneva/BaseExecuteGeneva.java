@@ -32,6 +32,7 @@ import org.apache.nifi.processors.standard.util.FileTransfer;
 import org.apache.nifi.processors.standard.util.SFTPTransfer;
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.github.knguyen.processors.ssh.ICommand;
 import com.github.knguyen.processors.ssh.SSHCommandExecutor;
 import com.github.knguyen.processors.utils.CustomValidators;
 
@@ -114,30 +115,40 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).sensitive(false).required(false)
             .addValidator(StandardValidators.PORT_VALIDATOR).build();
 
+    static final PropertyDescriptor REPORT_OUTPUT_DIRECTORY = new PropertyDescriptor.Builder().name("output-directory")
+            .displayName("Report Output Directory")
+            .description(
+                    "Defines the directory for storing report files. Recommended location is /tmp on Unix-like systems. This directory stores reports for NiFi processing. System administrators should regularly manage and clear this space for smooth operation, although processors in this bundle will make attempts to dispose any un-managed resources.")
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).sensitive(false).required(true)
+            .addValidator(StandardValidators.createDirectoryExistsValidator(true, true)).build();
+
     static final PropertyDescriptor PORTFOLIO_LIST = new PropertyDescriptor.Builder().name("portfolio")
             .displayName("Portfolio List")
             .description(
                     "Specifies portfolios as a comma-separated list. Enclose names containing spaces in escaped quotes, e.g., `MyPortfolio1,\\\"9000 International Fixed Income\\\",MyOtherPortfolio`.")
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false)
-            .addValidator(Validator.VALID).build();
+            .defaultValue("${geneva.portfolio}").addValidator(Validator.VALID).build();
 
     static final PropertyDescriptor PERIOD_START_DATE = new PropertyDescriptor.Builder().name("periodstartdate")
             .displayName("Period Start Date")
             .description("Specifies the period start date using ISO Date Time Format, i.e. yyyy-MM-dd'T'HH:mm:ss")
             .addValidator(CustomValidators.DATETIME_VALIDATOR)
-            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false).build();
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false)
+            .defaultValue("${geneva.periodstartdate}").build();
 
     static final PropertyDescriptor PERIOD_END_DATE = new PropertyDescriptor.Builder().name("periodenddate")
             .displayName("Period End Date")
             .description("Specifies the period end date using ISO Date Time Format, i.e. yyyy-MM-dd'T'HH:mm:ss")
             .addValidator(CustomValidators.DATETIME_VALIDATOR)
-            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false).build();
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false)
+            .defaultValue("${geneva.periodenddate}").build();
 
     static final PropertyDescriptor KNOWLEDGE_DATE = new PropertyDescriptor.Builder().name("knowledgedate")
             .displayName("Knowledge Date")
             .description("Specifies the knowledge date using ISO Date Time Format, i.e. yyyy-MM-dd'T'HH:mm:ss")
             .addValidator(CustomValidators.DATETIME_VALIDATOR)
-            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false).build();
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false)
+            .defaultValue("${geneva.knowledgedate}").build();
 
     static final AllowableValue DYNAMIC_ACCOUNTING = new AllowableValue("Dynamic", "Dynamic",
             "Dynamic accounting run.  The default mode for most reports.");
@@ -171,14 +182,16 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             .description("Specifies the prior knowledge date using ISO Date Time Format, i.e. yyyy-MM-dd'T'HH:mm:ss")
             .addValidator(CustomValidators.DATETIME_VALIDATOR)
             .dependsOn(ACCOUNTING_RUN_TYPE, CLOSED_PERIOD_ACCOUNTING, INCREMENTAL_ACCOUNTING)
-            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false).build();
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false)
+            .defaultValue("${geneva.priorknowledgedate}").build();
 
     static final PropertyDescriptor EXTRA_FLAGS = new PropertyDescriptor.Builder().displayName("Extra Flags")
             .name("extra-flags")
             .description(
                     "Use this field to specify any other flags.  You are responsible for correctly escaping any fields with special characters and spaces.  The arguments specified here will be presented as-is during a report run.")
             .addValidator(Validator.VALID).required(false)
-            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).build();
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+            .defaultValue("${geneva.extraflags}").build();
 
     static final AllowableValue CONSOLIDATE_ALL = new AllowableValue("-c1", "All", "Produces one consolidated report");
     static final AllowableValue GROUP_CONSOLIDATE = new AllowableValue("-c2", "GroupsOnly",
@@ -296,4 +309,6 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
     }
 
     protected abstract String constructReportParameters(final ProcessContext context, final FlowFile flowfile);
+
+    protected abstract ICommand getCommand();
 }
