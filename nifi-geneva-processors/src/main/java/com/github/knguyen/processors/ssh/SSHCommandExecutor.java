@@ -127,14 +127,7 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
     @Override
     public void execute(final ICommand command, final FlowFile originalFlowFile, final ProcessSession processSession)
             throws IOException, GenevaException {
-        final SSHClient client = this.getSSHClient(originalFlowFile);
-
-        // ensure that the SSHClient is initialized and connected
-        // the class `SSHClientProvider` should have already instantiated a connection for us
-        if (client == null || !client.isConnected()) {
-            logger.error("SSH Client is not connected. Cannot execute command.");
-            throw new IllegalStateException("SSH Client is not connected. Cannot execute command.");
-        }
+        final SSHClient client = ensureSSHClientConnected(originalFlowFile);
 
         try (final Session session = client.startSession()) {
             final Command cmd = session.exec(command.getCommand());
@@ -160,17 +153,9 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
     @Override
     public FlowFile getRemoteFile(final ICommand command, final FlowFile originalFlowFile,
             final ProcessSession processSession) throws IOException {
+        final SSHClient client = ensureSSHClientConnected(originalFlowFile);
+
         final String resource = command.getOutputResource();
-
-        final SSHClient client = this.getSSHClient(originalFlowFile);
-
-        // ensure that the SSHClient is initialized and connected
-        // the class `SSHClientProvider` should have already instantiated a connection for us
-        if (client == null || !client.isConnected()) {
-            logger.error("SSH Client is not connected. Cannot execute command.");
-            throw new IllegalStateException("SSH Client is not connected. Cannot execute command.");
-        }
-
         try (final SFTPClient sftpClient = client.newSFTPClient()) {
             try (final RemoteFile remoteFile = sftpClient.open(resource)) {
                 try (final RemoteFile.ReadAheadRemoteFileInputStream rfis = remoteFile.new ReadAheadRemoteFileInputStream(
@@ -179,5 +164,14 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
                 }
             }
         }
+    }
+
+    private SSHClient ensureSSHClientConnected(final FlowFile flowFile) throws IllegalStateException, IOException {
+        final SSHClient client = this.getSSHClient(flowFile);
+        if (client == null || !client.isConnected()) {
+            logger.error("SSH Client is not connected. Cannot execute command.");
+            throw new IllegalStateException("SSH Client is not connected. Cannot execute command.");
+        }
+        return client;
     }
 }
