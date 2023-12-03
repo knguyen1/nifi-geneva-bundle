@@ -34,4 +34,17 @@ public interface ICommand {
      * @return A {@link String} representing the loggable part of the command.
      */
     String getLoggablePart();
+
+    /**
+     * Retrieves the resource identifier (such as a file or URI) where the output of the command is directed. This
+     * method is used to identify the destination for the command's output, which could be a file path, a URI, or any
+     * other form of resource identifier. The returned value should be the exact path or URI as used by the command for
+     * its output.
+     *
+     * Note: Depending on the implementation, this resource identifier might contain sensitive information. Hence, it
+     * should be handled with the same security considerations as the unobfuscated command.
+     *
+     * @return A {@link String} representing the output resource identifier for the command.
+     */
+    String getOutputResource();
 }

@@ -21,8 +21,10 @@ import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.Validator;
 import org.apache.nifi.processor.AbstractProcessor;
 import org.apache.nifi.processor.ProcessContext;
+import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.Relationship;
+import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.processors.standard.ssh.SSHClientProvider;
 import org.apache.nifi.processors.standard.ssh.StandardSSHClientProvider;
@@ -32,16 +34,21 @@ import org.apache.nifi.processors.standard.util.FileTransfer;
 import org.apache.nifi.processors.standard.util.SFTPTransfer;
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.github.knguyen.processors.ssh.Command;
 import com.github.knguyen.processors.ssh.ICommand;
 import com.github.knguyen.processors.ssh.SSHCommandExecutor;
 import com.github.knguyen.processors.utils.CustomValidators;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class BaseExecuteGeneva extends AbstractProcessor {
 
@@ -118,9 +125,9 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
     static final PropertyDescriptor REPORT_OUTPUT_DIRECTORY = new PropertyDescriptor.Builder().name("output-directory")
             .displayName("Report Output Directory")
             .description(
-                    "Defines the directory for storing report files. Recommended location is /tmp on Unix-like systems. This directory stores reports for NiFi processing. System administrators should regularly manage and clear this space for smooth operation, although processors in this bundle will make attempts to dispose any un-managed resources.")
+                    "Defines the directory for storing report files. Recommended location is `/tmp` on Unix-like systems. This directory stores reports for NiFi processing. System administrators should regularly manage and clear this space for smooth operation, although processors in this bundle will make attempts to dispose any un-managed resources.")
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).sensitive(false).required(true)
-            .addValidator(StandardValidators.createDirectoryExistsValidator(true, true)).build();
+            .addValidator(StandardValidators.createDirectoryExistsValidator(true, true)).defaultValue("/tmp").build();
 
     static final PropertyDescriptor PORTFOLIO_LIST = new PropertyDescriptor.Builder().name("portfolio")
             .displayName("Portfolio List")
@@ -226,6 +233,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         baseDescriptors.add(PRIVATE_KEY_PASSPHRASE);
         baseDescriptors.add(DATA_TIMEOUT);
         baseDescriptors.add(SFTPTransfer.CONNECTION_TIMEOUT);
+        baseDescriptors.add(REPORT_OUTPUT_DIRECTORY);
         baseDescriptors.add(RUNREP_USERNAME);
         baseDescriptors.add(RUNREP_PASSWORD);
         baseDescriptors.add(GENEVA_AGA);
@@ -269,6 +277,25 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         return new SSHCommandExecutor(context, getLogger());
     }
 
+    @Override
+    public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
+        final FlowFile flowFile = session.get();
+        if (flowFile == null)
+            return;
+
+        try (final RemoteCommandExecutor client = createExecutor(context)) {
+
+            // execute the cmd on the server
+            final ICommand command = getCommand(context, flowFile);
+            client.execute(command, flowFile, session);
+
+            // now get the file
+            final FlowFile newFlowFile = client.getRemoteFile(command, flowFile, session);
+        } catch (final IOException | GenevaException exc) {
+
+        }
+    }
+
     /**
      * Generates and returns the initialization string for the Runrep command. This method constructs the string used to
      * initialize the Runrep utility, specifying an empty list file and beginning a command block. The returned string
@@ -279,6 +306,18 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
      */
     protected String getRunrepInitStr() {
         return "runrep -f empty.lst -b << EOF";
+    }
+
+    /**
+     * Retrieves the string command used to exit the 'runrep' process.
+     *
+     * This method returns a string that combines an 'exit' command followed by an 'EOF' (End Of File) marker. This
+     * combination signals the end of an input stream.
+     *
+     * @return A string "exit\nEOF" indicating the commands to terminate the 'runrep' process.
+     */
+    protected String getRunrepExitStr() {
+        return "exit\nEOF";
     }
 
     /**
@@ -308,7 +347,99 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         return Pair.of(command, obfuscatedCommand);
     }
 
-    protected abstract String constructReportParameters(final ProcessContext context, final FlowFile flowfile);
+    protected abstract String getReportCommand(final ProcessContext context, final FlowFile flowfile);
 
-    protected abstract ICommand getCommand();
+    /**
+     * Constructs and returns a Command object representing both obfuscated and unobfuscated forms of a runrep command.
+     * This method combines various parts of the runrep command, including initialization, connection, report
+     * parameters, and exit sequences. It ensures that sensitive information in the command is obfuscated, while also
+     * maintaining the original unobfuscated command for execution purposes. The method leverages other protected
+     * methods to construct different parts of the command and then assembles them into a single command string.
+     *
+     * @param context
+     *            The ProcessContext providing the necessary configuration and environment for the command construction.
+     * @param flowfile
+     *            The FlowFile containing any dynamic attributes or data relevant to the command construction.
+     *
+     * @return An ICommand object containing both the complete unobfuscated command and its obfuscated counterpart,
+     *         suitable for execution and logging purposes respectively.
+     */
+    protected ICommand getCommand(final ProcessContext context, final FlowFile flowfile) {
+        final String runrepInitStr = getRunrepInitStr();
+        final Pair<String, String> runrepConnectStr = getRunrepConnectStr(context, flowfile);
+        final String reportCommandStr = getReportCommand(context, flowfile);
+        final String runrepExitStr = getRunrepExitStr();
+
+        final String runrepCommand = String.format("%s\n%s\n%s\n%s", runrepInitStr, runrepConnectStr.getLeft(),
+                reportCommandStr, runrepExitStr);
+        final String obfuscatedRunrepCommand = String.format("%s\n%s\n%s\n%s", runrepInitStr,
+                runrepConnectStr.getRight(), reportCommandStr, runrepExitStr);
+
+        return new Command(runrepCommand, obfuscatedRunrepCommand);
+    }
+
+    protected String getReportParameters(final ProcessContext context, final FlowFile flowfile) {
+        return Stream.of(
+                formatParameter("-p",
+                        context.getProperty(PORTFOLIO_LIST).evaluateAttributeExpressions(flowfile).getValue()),
+                formatParameter("-ps",
+                        context.getProperty(PERIOD_START_DATE).evaluateAttributeExpressions(flowfile).getValue()),
+                formatParameter("-pe",
+                        context.getProperty(PERIOD_END_DATE).evaluateAttributeExpressions(flowfile).getValue()),
+                formatParameter("-k",
+                        context.getProperty(KNOWLEDGE_DATE).evaluateAttributeExpressions(flowfile).getValue()),
+                formatParameter("-pk",
+                        context.getProperty(PRIOR_KNOWLEDGE_DATE).evaluateAttributeExpressions(flowfile).getValue()),
+                formatAccountingRunType(context, flowfile), formatReportConsolidation(context, flowfile),
+                formatExtraFlags(context, flowfile)).filter(Objects::nonNull).collect(Collectors.joining(" "));
+    }
+
+    private String formatParameter(String paramName, String paramValue) {
+        return org.apache.nifi.util.StringUtils.isNotBlank(paramValue) ? String.format("%s %s", paramName, paramValue)
+                : null;
+    }
+
+    private String formatExtraFlags(final ProcessContext context, final FlowFile flowfile) {
+        String extraFlags = context.getProperty(EXTRA_FLAGS).evaluateAttributeExpressions(flowfile).getValue();
+        return org.apache.nifi.util.StringUtils.isNotBlank(extraFlags) ? extraFlags.trim() : null;
+    }
+
+    private String formatReportConsolidation(final ProcessContext context, final FlowFile flowfile) {
+        String consolidationValue = context.getProperty(REPORT_CONSOLIDATION).evaluateAttributeExpressions(flowfile)
+                .getValue();
+
+        // Check if the value is not NONE_CONSOLIDATED and not null/blank
+        if (!NONE_CONSOLIDATED.getValue().equals(consolidationValue)
+                && org.apache.nifi.util.StringUtils.isNotBlank(consolidationValue)) {
+            return consolidationValue;
+        }
+
+        // Return null if it's NONE_CONSOLIDATED, null, or blank
+        return null;
+    }
+
+    /**
+     * Generates a parameter string for the accounting run type if it's not dynamic accounting or blank. The parameter
+     * string will be in the format `-at {value}`.
+     *
+     * @param context
+     *            The process context to extract the property value.
+     * @param flowfile
+     *            The flowfile to evaluate attribute expressions against.
+     *
+     * @return The parameter string or null if the condition is not met.
+     */
+    private String formatAccountingRunType(final ProcessContext context, final FlowFile flowfile) {
+        String accountingRunType = context.getProperty(ACCOUNTING_RUN_TYPE).evaluateAttributeExpressions(flowfile)
+                .getValue();
+
+        // Check if the accounting run type is not dynamic and not blank
+        if (!DYNAMIC_ACCOUNTING.getValue().equals(accountingRunType)
+                && org.apache.nifi.util.StringUtils.isNotBlank(accountingRunType)) {
+            return String.format("%s %s", ACCOUNTING_RUN_TYPE.getName(), accountingRunType);
+        }
+
+        // Return null if dynamic accounting or blank
+        return null;
+    }
 }

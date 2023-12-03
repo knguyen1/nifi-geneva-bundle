@@ -16,6 +16,7 @@ import org.apache.nifi.processors.standard.ssh.StandardSSHClientProvider;
 import org.apache.nifi.processors.standard.util.FileTransfer;
 import org.apache.nifi.processors.standard.util.SFTPTransfer;
 import org.apache.nifi.util.StringUtils;
+import org.apache.nifi.util.file.FileUtils;
 
 import com.github.knguyen.processors.geneva.GenevaException;
 import com.github.knguyen.processors.geneva.RemoteCommandExecutor;
@@ -23,6 +24,8 @@ import com.github.knguyen.processors.geneva.RemoteCommandExecutor;
 import net.schmizz.sshj.SSHClient;
 import net.schmizz.sshj.connection.channel.direct.Session;
 import net.schmizz.sshj.connection.channel.direct.Session.Command;
+import net.schmizz.sshj.sftp.RemoteFile;
+import net.schmizz.sshj.sftp.SFTPClient;
 
 import java.util.Objects;
 
@@ -146,6 +149,33 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
                     if (cmd.getExitStatus() != null) {
                         break;
                     }
+                }
+
+                // wait x seconds for the file to materialise
+                FileUtils.sleepQuietly(3000);
+            }
+        }
+    }
+
+    @Override
+    public FlowFile getRemoteFile(final ICommand command, final FlowFile originalFlowFile,
+            final ProcessSession processSession) throws IOException {
+        final String resource = command.getOutputResource();
+
+        final SSHClient client = this.getSSHClient(originalFlowFile);
+
+        // ensure that the SSHClient is initialized and connected
+        // the class `SSHClientProvider` should have already instantiated a connection for us
+        if (client == null || !client.isConnected()) {
+            logger.error("SSH Client is not connected. Cannot execute command.");
+            throw new IllegalStateException("SSH Client is not connected. Cannot execute command.");
+        }
+
+        try (final SFTPClient sftpClient = client.newSFTPClient()) {
+            try (final RemoteFile remoteFile = sftpClient.open(resource)) {
+                try (final RemoteFile.ReadAheadRemoteFileInputStream rfis = remoteFile.new ReadAheadRemoteFileInputStream(
+                        16)) {
+
                 }
             }
         }

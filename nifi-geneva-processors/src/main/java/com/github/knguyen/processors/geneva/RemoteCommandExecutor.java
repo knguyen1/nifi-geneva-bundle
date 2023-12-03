@@ -16,6 +16,9 @@ public interface RemoteCommandExecutor extends Closeable {
     void execute(final ICommand command, final FlowFile originalFlowFile, final ProcessSession processSession)
             throws IOException, GenevaException;
 
+    FlowFile getRemoteFile(final ICommand command, final FlowFile originalFlowFile, final ProcessSession processSession)
+            throws IOException;
+
     default void maybeRaiseException(final String message, final String loggableCommand, final String errorLine)
             throws GenevaException {
         // Array of keywords to check in the errorLine
