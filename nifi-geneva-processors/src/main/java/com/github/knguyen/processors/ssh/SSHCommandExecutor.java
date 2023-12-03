@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.nifi.context.PropertyContext;
@@ -19,6 +20,7 @@ import org.apache.nifi.util.StringUtils;
 import org.apache.nifi.util.file.FileUtils;
 
 import com.github.knguyen.processors.geneva.GenevaException;
+import com.github.knguyen.processors.geneva.IStreamHandler;
 import com.github.knguyen.processors.geneva.RemoteCommandExecutor;
 
 import net.schmizz.sshj.SSHClient;
@@ -26,8 +28,6 @@ import net.schmizz.sshj.connection.channel.direct.Session;
 import net.schmizz.sshj.connection.channel.direct.Session.Command;
 import net.schmizz.sshj.sftp.RemoteFile;
 import net.schmizz.sshj.sftp.SFTPClient;
-
-import java.util.Objects;
 
 public class SSHCommandExecutor implements RemoteCommandExecutor {
     private static final SSHClientProvider sshClientProvider = new StandardSSHClientProvider();
@@ -103,6 +103,11 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
     }
 
     @Override
+    public String getProtocolName() {
+        return "ssh";
+    }
+
+    @Override
     public void close() throws IOException {
         if (closed) {
             return;
@@ -152,7 +157,7 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
 
     @Override
     public FlowFile getRemoteFile(final ICommand command, final FlowFile originalFlowFile,
-            final ProcessSession processSession) throws IOException {
+            final ProcessSession processSession, IStreamHandler streamHandler) throws IOException {
         final SSHClient client = ensureSSHClientConnected(originalFlowFile);
 
         final String resource = command.getOutputResource();
@@ -160,7 +165,7 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
             try (final RemoteFile remoteFile = sftpClient.open(resource)) {
                 try (final RemoteFile.ReadAheadRemoteFileInputStream rfis = remoteFile.new ReadAheadRemoteFileInputStream(
                         16)) {
-
+                    return streamHandler.handleStream(originalFlowFile, processSession, rfis);
                 }
             }
         }

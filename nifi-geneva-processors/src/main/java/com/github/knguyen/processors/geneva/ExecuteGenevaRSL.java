@@ -7,8 +7,6 @@ import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
-import org.apache.nifi.processor.ProcessSession;
-import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
 import com.github.knguyen.processors.utils.StringUtils;
@@ -24,6 +22,11 @@ public class ExecuteGenevaRSL extends BaseExecuteGeneva {
     @Override
     protected List<PropertyDescriptor> additionalDescriptors() {
         return Arrays.asList(RSL_NAME);
+    }
+
+    @Override
+    public IStreamHandler getStreamHandler() {
+        return new StreamToFlowfileContentHandler();
     }
 
     @Override

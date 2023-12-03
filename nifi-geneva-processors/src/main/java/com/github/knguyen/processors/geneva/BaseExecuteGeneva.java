@@ -43,12 +43,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.nifi.util.StopWatch;
+import java.util.concurrent.TimeUnit;
 
 public abstract class BaseExecuteGeneva extends AbstractProcessor {
 
@@ -251,6 +255,8 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
 
     protected abstract List<PropertyDescriptor> additionalDescriptors();
 
+    protected abstract IStreamHandler getStreamHandler();
+
     @Override
     protected void init(final ProcessorInitializationContext context) {
         descriptors = commonDescriptors();
@@ -283,14 +289,48 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         if (flowFile == null)
             return;
 
+        final StopWatch stopWatch = new StopWatch(true);
+        final String host = context.getProperty(HOSTNAME).evaluateAttributeExpressions(flowFile).getValue();
+        final int port = context.getProperty(PORT).evaluateAttributeExpressions(flowFile).asInteger();
+
+        // Geneva runrep-specific information
+        final String genevaAga = context.getProperty(GENEVA_AGA).evaluateAttributeExpressions(flowFile).getValue();
+        final String genevaUser = context.getProperty(RUNREP_USERNAME).evaluateAttributeExpressions(flowFile)
+                .getValue();
+
         try (final RemoteCommandExecutor client = createExecutor(context)) {
 
             // execute the cmd on the server
             final ICommand command = getCommand(context, flowFile);
+
+            // It's possible that report runs will fail through no fault of our own
+            // This could happen due to no fault of our own (memory, report, invalid params, etc.)
             client.execute(command, flowFile, session);
 
+            // The result csv file on the server
+            final String resultCsvFile = command.getOutputResource();
+
             // now get the file
-            final FlowFile newFlowFile = client.getRemoteFile(command, flowFile, session);
+            final FlowFile resultFlowFile = client.getRemoteFile(command, flowFile, session, getStreamHandler());
+
+            final long elapsedMs = stopWatch.getElapsed(TimeUnit.MILLISECONDS);
+
+            // Add FlowFile attributes
+            final Map<String, String> attributes = new HashMap<>();
+            final String protocolName = client.getProtocolName();
+
+            attributes.put(protocolName + ".remote.host", host);
+            attributes.put(protocolName + ".remote.port", String.valueOf(port));
+            attributes.put(protocolName + ".remote.filename", resultCsvFile);
+            attributes.put("geneva.runrep.aga", genevaAga);
+            attributes.put("geneva.runrep.user", genevaUser);
+            attributes.put("geneva.runrep.command", command.getLoggablePart());
+            attributes.put("geneva.runrep.elapsedms", String.valueOf(elapsedMs));
+
+            // emit provenance event and transfer FlowFile
+            session.getProvenanceReporter().fetch(resultFlowFile,
+                    client.getProtocolName() + "://" + host + ":" + port + "/" + resultCsvFile, elapsedMs);
+            session.transfer(resultFlowFile, REL_SUCCESS);
         } catch (final IOException | GenevaException exc) {
 
         }

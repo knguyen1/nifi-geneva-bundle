@@ -9,6 +9,8 @@ import org.apache.nifi.processor.ProcessSession;
 import com.github.knguyen.processors.ssh.ICommand;
 
 public interface RemoteCommandExecutor extends Closeable {
+    String getProtocolName();
+
     boolean isClosed();
 
     void close() throws IOException;
@@ -16,8 +18,8 @@ public interface RemoteCommandExecutor extends Closeable {
     void execute(final ICommand command, final FlowFile originalFlowFile, final ProcessSession processSession)
             throws IOException, GenevaException;
 
-    FlowFile getRemoteFile(final ICommand command, final FlowFile originalFlowFile, final ProcessSession processSession)
-            throws IOException;
+    FlowFile getRemoteFile(final ICommand command, final FlowFile originalFlowFile, final ProcessSession processSession,
+            IStreamHandler streamHandler) throws IOException;
 
     default void maybeRaiseException(final String message, final String loggableCommand, final String errorLine)
             throws GenevaException {
