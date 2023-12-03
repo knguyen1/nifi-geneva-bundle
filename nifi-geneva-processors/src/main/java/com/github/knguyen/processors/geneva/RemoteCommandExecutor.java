@@ -21,7 +21,9 @@ public interface RemoteCommandExecutor extends Closeable {
     FlowFile getRemoteFile(final ICommand command, final FlowFile originalFlowFile, final ProcessSession processSession,
             IStreamHandler streamHandler) throws IOException;
 
-    default void maybeRaiseException(final String message, final String loggableCommand, final String errorLine)
+    void deleteFile(final ICommand command, final FlowFile flowFile) throws IOException;
+
+    default void maybeRaiseException(final String message, final String errorLine, final String loggableCommand)
             throws GenevaException {
         // Array of keywords to check in the errorLine
         String[] keywords = { "error", "failed", "exception", "error running", "failure" };
@@ -30,7 +32,7 @@ public interface RemoteCommandExecutor extends Closeable {
         for (String keyword : keywords) {
             if (errorLine != null && errorLine.toLowerCase().contains(keyword)) {
                 // If a keyword is found, throw GenevaRunrepException
-                throw new GenevaException(message, loggableCommand, errorLine);
+                throw new GenevaException(message, errorLine, loggableCommand);
             }
         }
     }

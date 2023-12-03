@@ -1,18 +1,18 @@
 package com.github.knguyen.processors.geneva;
 
 public class GenevaException extends Exception {
-    private String errorMessage;
+    private String genevaErrorMessage;
     private String command;
 
     public GenevaException(final String message, final String errorMessage, final String command) {
         super(message);
-        this.errorMessage = errorMessage;
+        this.genevaErrorMessage = errorMessage;
         this.command = command;
     }
 
     // Getter for errorMessage
-    public String getErrorMessage() {
-        return errorMessage;
+    public String getGenevaErrorMessage() {
+        return genevaErrorMessage;
     }
 
     // Getter for command
@@ -23,7 +23,7 @@ public class GenevaException extends Exception {
     // Custom toString method for more informative error messages
     @Override
     public String toString() {
-        return "GenevaError{" + "message='" + getMessage() + '\'' + ", errorMessage='" + errorMessage + '\''
+        return "GenevaError{" + "message='" + getMessage() + '\'' + ", errorMessage='" + genevaErrorMessage + '\''
                 + ", command='" + command + '\'' + '}';
     }
 
@@ -34,7 +34,7 @@ public class GenevaException extends Exception {
 
     // Method to provide a detailed report of the error
     public String getDetailedReport() {
-        return "Error occurred during command execution: " + command + "\nError Message: " + errorMessage
+        return "Error occurred during command execution: " + command + "\nError Message: " + genevaErrorMessage
                 + "\nDetailed Message: " + getMessage();
     }
 }

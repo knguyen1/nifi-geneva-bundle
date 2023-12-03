@@ -1,6 +1,7 @@
 package com.github.knguyen.processors.ssh;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Collections;
@@ -15,6 +16,7 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processors.standard.ssh.SSHClientProvider;
 import org.apache.nifi.processors.standard.ssh.StandardSSHClientProvider;
 import org.apache.nifi.processors.standard.util.FileTransfer;
+import org.apache.nifi.processors.standard.util.PermissionDeniedException;
 import org.apache.nifi.processors.standard.util.SFTPTransfer;
 import org.apache.nifi.util.StringUtils;
 import org.apache.nifi.util.file.FileUtils;
@@ -28,6 +30,7 @@ import net.schmizz.sshj.connection.channel.direct.Session;
 import net.schmizz.sshj.connection.channel.direct.Session.Command;
 import net.schmizz.sshj.sftp.RemoteFile;
 import net.schmizz.sshj.sftp.SFTPClient;
+import net.schmizz.sshj.sftp.SFTPException;
 
 public class SSHCommandExecutor implements RemoteCommandExecutor {
     private static final SSHClientProvider sshClientProvider = new StandardSSHClientProvider();
@@ -141,7 +144,7 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
             try (BufferedReader stdErrReader = new BufferedReader(new InputStreamReader(cmd.getErrorStream()))) {
                 String line;
                 while (StringUtils.isNotBlank(line = stdErrReader.readLine())) {
-                    this.maybeRaiseException("Failed to run command in runrep", command.getObfuscatedCommand(), line);
+                    this.maybeRaiseException("Failed to run command in runrep", line, command.getObfuscatedCommand());
 
                     // Break the loop if the exit status is available
                     if (cmd.getExitStatus() != null) {
@@ -167,6 +170,29 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
                         16)) {
                     return streamHandler.handleStream(originalFlowFile, processSession, rfis);
                 }
+            }
+        }
+    }
+
+    @Override
+    public void deleteFile(final ICommand command, final FlowFile flowFile) throws IOException {
+        final SSHClient client = ensureSSHClientConnected(flowFile);
+        final String remoteFile = command.getOutputResource();
+
+        try (final SFTPClient sftpClient = client.newSFTPClient()) {
+            sftpClient.rm(remoteFile);
+        } catch (final SFTPException exc) {
+            switch (exc.getStatusCode()) {
+            case NO_SUCH_FILE:
+                throw new FileNotFoundException(
+                        String.format("Could not find the file `%s` to remove from the server.", remoteFile));
+            case PERMISSION_DENIED:
+                throw new PermissionDeniedException(
+                        String.format("Insufficient permissions to delete the file `%s` from the server.", remoteFile),
+                        exc);
+            default:
+                throw new IOException(String.format("Could not delete the file `%s` from the server.", remoteFile),
+                        exc);
             }
         }
     }

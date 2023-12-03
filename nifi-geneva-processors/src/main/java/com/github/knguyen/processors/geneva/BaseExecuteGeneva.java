@@ -30,6 +30,7 @@ import org.apache.nifi.processors.standard.ssh.SSHClientProvider;
 import org.apache.nifi.processors.standard.ssh.StandardSSHClientProvider;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
+import org.apache.nifi.logging.ComponentLog;
 import org.apache.nifi.processors.standard.util.FileTransfer;
 import org.apache.nifi.processors.standard.util.SFTPTransfer;
 import org.apache.commons.lang3.tuple.Pair;
@@ -39,6 +40,7 @@ import com.github.knguyen.processors.ssh.ICommand;
 import com.github.knguyen.processors.ssh.SSHCommandExecutor;
 import com.github.knguyen.processors.utils.CustomValidators;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -52,6 +54,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.nifi.util.StopWatch;
+import org.apache.nifi.util.StringUtils;
+
 import java.util.concurrent.TimeUnit;
 
 public abstract class BaseExecuteGeneva extends AbstractProcessor {
@@ -285,7 +289,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
 
     @Override
     public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
-        final FlowFile flowFile = session.get();
+        FlowFile flowFile = session.get();
         if (flowFile == null)
             return;
 
@@ -298,26 +302,34 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         final String genevaUser = context.getProperty(RUNREP_USERNAME).evaluateAttributeExpressions(flowFile)
                 .getValue();
 
-        try (final RemoteCommandExecutor client = createExecutor(context)) {
+        try (final RemoteCommandExecutor commandExecutor = createExecutor(context)) {
 
             // execute the cmd on the server
             final ICommand command = getCommand(context, flowFile);
 
             // It's possible that report runs will fail through no fault of our own
             // This could happen due to no fault of our own (memory, report, invalid params, etc.)
-            client.execute(command, flowFile, session);
+            String failureReason = null;
+            try {
+                commandExecutor.execute(command, flowFile, session);
+            } catch (final GenevaException exc) {
+                reportFailure(session, flowFile, String.format("Got the error %s while executing command %.",
+                        exc.getGenevaErrorMessage(), command.getLoggablePart()), exc);
+                return;
+            } catch (final IOException exc) {
+                reportFailure(session, flowFile, "Error executing command: " + command.getLoggablePart(), exc);
+                return;
+            }
 
             // The result csv file on the server
             final String resultCsvFile = command.getOutputResource();
-
-            // now get the file
-            final FlowFile resultFlowFile = client.getRemoteFile(command, flowFile, session, getStreamHandler());
+            flowFile = commandExecutor.getRemoteFile(command, flowFile, session, getStreamHandler());
 
             final long elapsedMs = stopWatch.getElapsed(TimeUnit.MILLISECONDS);
 
             // Add FlowFile attributes
             final Map<String, String> attributes = new HashMap<>();
-            final String protocolName = client.getProtocolName();
+            final String protocolName = commandExecutor.getProtocolName();
 
             attributes.put(protocolName + ".remote.host", host);
             attributes.put(protocolName + ".remote.port", String.valueOf(port));
@@ -327,12 +339,28 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             attributes.put("geneva.runrep.command", command.getLoggablePart());
             attributes.put("geneva.runrep.elapsedms", String.valueOf(elapsedMs));
 
-            // emit provenance event and transfer FlowFile
-            session.getProvenanceReporter().fetch(resultFlowFile,
-                    client.getProtocolName() + "://" + host + ":" + port + "/" + resultCsvFile, elapsedMs);
-            session.transfer(resultFlowFile, REL_SUCCESS);
-        } catch (final IOException | GenevaException exc) {
+            if (!StringUtils.isNotBlank(failureReason)) {
+                attributes.put("geneva.runrep.error", failureReason);
+                flowFile = session.putAllAttributes(flowFile, attributes);
+                session.transfer(session.penalize(flowFile), REL_FAILURE);
+                session.getProvenanceReporter().route(flowFile, REL_FAILURE);
+                return;
+            }
 
+            flowFile = session.putAllAttributes(flowFile, attributes);
+
+            // emit provenance event and transfer FlowFile
+            session.getProvenanceReporter().fetch(flowFile,
+                    commandExecutor.getProtocolName() + "://" + host + ":" + port + "/" + resultCsvFile, elapsedMs);
+            session.transfer(flowFile, REL_SUCCESS);
+
+            final FlowFile finalFlowFile = flowFile;
+            session.commitAsync(() -> {
+                performCompletion(commandExecutor, command, context, finalFlowFile);
+            });
+        } catch (final IOException exc) {
+            getLogger().error("Unexpected error occured.", exc);
+            throw new ProcessException("Unexpected error occured.", exc);
         }
     }
 
@@ -481,5 +509,26 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
 
         // Return null if dynamic accounting or blank
         return null;
+    }
+
+    private void performCompletion(final RemoteCommandExecutor commandExecutor, final ICommand command,
+            final ProcessContext context, final FlowFile flowfile) {
+        try {
+            commandExecutor.deleteFile(command, flowfile);
+        } catch (final FileNotFoundException fnfe) {
+            // Do nothing, the file is not found
+        } catch (final IOException exc) {
+            getLogger().warn(String.format(
+                    "Successfully ran runrep and got the content from `%s` but something went wrong while clean it up.",
+                    command.getOutputResource()), exc);
+        }
+    }
+
+    private void reportFailure(final ProcessSession session, final FlowFile flowFile, final String error,
+            final Exception exception) {
+        final ComponentLog logger = getLogger();
+        logger.error(error, exception);
+        session.transfer(session.penalize(flowFile), REL_FAILURE);
+        session.getProvenanceReporter().route(flowFile, REL_FAILURE);
     }
 }
