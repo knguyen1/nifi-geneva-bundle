@@ -4,6 +4,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.LocalDateTime;
 
+/**
+ * The `GenevaTestRunner` class is used for running Geneva tests via SSH. It encapsulates various configuration
+ * parameters required for running the tests, such as hostname, port, SSH authentication strategy, username, password,
+ * private key details, connection timeouts, report output directory, test account details, and test parameters.
+ *
+ * It uses a Builder pattern to construct an instance of `GenevaTestRunner`. This way, you can specify only the
+ * parameters you need and keep the rest with their default values.
+ *
+ * After construction, call the `execute` method and pass in an implementation of `IExecuteGenevaTest`. This will run
+ * the test with the current configuration. `execute` method will return a boolean indicating whether the test succeeded
+ * or not.
+ *
+ * After the test run, you can call `assertPass` to assert that the test was successful. It will throw an AssertionError
+ * if the test did not pass.
+ *
+ * Typical usage would involve chaining method calls as follows: GenevaTestRunner testRunner = new
+ * GenevaTestRunner.Builder().withHostname("hostname").withUsername("username").build();
+ * testRunner.execute(myTestImplementation).assertPass();
+ */
 public class GenevaTestRunner {
     private String hostname;
     private Integer port;
@@ -192,6 +211,22 @@ public class GenevaTestRunner {
                 runrepUsername, runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate,
                 periodEndDate, knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags);
 
+        return this;
+    }
+
+    public GenevaTestRunner assertValid(IExecuteGenevaTest testRunner) {
+        testRunner.assertValid(hostname, port, sshAuthenticationStrategy, username, password, privateKeyPath,
+                privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory, runrepUsername,
+                runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate, periodEndDate,
+                knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags);
+        return this;
+    }
+
+    public GenevaTestRunner assertNotValid(IExecuteGenevaTest testRunner) {
+        testRunner.assertNotValid(hostname, port, sshAuthenticationStrategy, username, password, privateKeyPath,
+                privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory, runrepUsername,
+                runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate, periodEndDate,
+                knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags);
         return this;
     }
 
