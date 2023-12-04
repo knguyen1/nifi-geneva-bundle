@@ -222,9 +222,11 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             .defaultValue(NONE_CONSOLIDATED.getValue()).required(false).build();
 
     static final Relationship REL_SUCCESS = new Relationship.Builder().name("success")
-            .description("Any Geneva query that executed without errors will be routed to success").build();
+            .description("Any Geneva query that executed without errors will be routed to `success`.").build();
     static final Relationship REL_FAILURE = new Relationship.Builder().name("failure")
-            .description("Any Geneva query that executed with errors will be routed to failure").build();
+            .description("General exceptions (e.g. IOException, Timeout, etc.) will be routed to `failure`..").build();
+    static final Relationship REL_GENEVA_FAILURE = new Relationship.Builder().name("geneva-failure")
+            .description("Any Geneva query that executed with errors will be routed to `geneva-failure`.").build();
 
     protected List<PropertyDescriptor> descriptors;
 
@@ -270,6 +272,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         relationships = new HashSet<>();
         relationships.add(REL_SUCCESS);
         relationships.add(REL_FAILURE);
+        relationships.add(REL_GENEVA_FAILURE);
         relationships = Collections.unmodifiableSet(relationships);
     }
 
@@ -306,28 +309,8 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
 
             // execute the cmd on the server
             final ICommand command = getCommand(context, flowFile);
-
-            // It's possible that report runs will fail through no fault of our own
-            // This could happen due to no fault of our own (memory, report, invalid params, etc.)
-            String failureReason = null;
-            try {
-                commandExecutor.execute(command, flowFile, session);
-            } catch (final GenevaException exc) {
-                reportFailure(session, flowFile, String.format("Got the error %s while executing command %s.",
-                        exc.getGenevaErrorMessage(), command.getLoggablePart()), exc);
-                return;
-            } catch (final IOException exc) {
-                reportFailure(session, flowFile, "Error executing command: " + command.getLoggablePart(), exc);
-                return;
-            }
-
-            // The result csv file on the server
             final String resultCsvFile = command.getOutputResource();
-            flowFile = commandExecutor.getRemoteFile(command, flowFile, session, getStreamHandler());
 
-            final long elapsedMs = stopWatch.getElapsed(TimeUnit.MILLISECONDS);
-
-            // Add FlowFile attributes
             final Map<String, String> attributes = new HashMap<>();
             final String protocolName = commandExecutor.getProtocolName();
 
@@ -337,17 +320,18 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             attributes.put("geneva.runrep.aga", genevaAga);
             attributes.put("geneva.runrep.user", genevaUser);
             attributes.put("geneva.runrep.command", command.getLoggablePart());
-            attributes.put("geneva.runrep.elapsedms", String.valueOf(elapsedMs));
-
-            if (!StringUtils.isNotBlank(failureReason)) {
-                attributes.put("geneva.runrep.error", failureReason);
-                flowFile = session.putAllAttributes(flowFile, attributes);
-                session.transfer(session.penalize(flowFile), REL_FAILURE);
-                session.getProvenanceReporter().route(flowFile, REL_FAILURE);
-                return;
-            }
 
             flowFile = session.putAllAttributes(flowFile, attributes);
+
+            // It's possible that report runs will fail through no fault of our own
+            // This could happen due to no fault of our own (memory, report, invalid params, etc.)
+            commandExecutor.execute(command, flowFile, session);
+
+            // The result csv file on the server
+            flowFile = commandExecutor.getRemoteFile(command, flowFile, session, getStreamHandler());
+
+            final long elapsedMs = stopWatch.getElapsed(TimeUnit.MILLISECONDS);
+            flowFile = session.putAttribute(flowFile, "geneva.runrep.elapsedms", String.valueOf(elapsedMs));
 
             // emit provenance event and transfer FlowFile
             session.getProvenanceReporter().fetch(flowFile,
@@ -355,11 +339,14 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             session.transfer(flowFile, REL_SUCCESS);
 
             final FlowFile finalFlowFile = flowFile;
-            session.commitAsync(() -> {
-                performCompletion(commandExecutor, command, finalFlowFile);
-            });
+            session.commitAsync(() -> performCompletion(commandExecutor, command, finalFlowFile));
+        } catch (final GenevaException exc) {
+            final String failureReason = exc.getGenevaErrorMessage();
+            flowFile = session.putAttribute(flowFile, "geneva.runrep.error", failureReason);
+            reportFailure(session, flowFile, String.format("Got the error %s while executing command %s.",
+                    exc.getGenevaErrorMessage(), exc.getCommand()), exc, REL_GENEVA_FAILURE);
         } catch (final IOException exc) {
-            getLogger().error("Unexpected error occured.", exc);
+            reportFailure(session, flowFile, genevaUser, exc, REL_FAILURE);
             throw new ProcessException("Unexpected error occured.", exc);
         }
     }
@@ -525,10 +512,10 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
     }
 
     private void reportFailure(final ProcessSession session, final FlowFile flowFile, final String error,
-            final Exception exception) {
+            final Exception exception, final Relationship relationship) {
         final ComponentLog logger = getLogger();
         logger.error(error, exception);
-        session.transfer(session.penalize(flowFile), REL_FAILURE);
-        session.getProvenanceReporter().route(flowFile, REL_FAILURE);
+        session.transfer(session.penalize(flowFile), relationship);
+        session.getProvenanceReporter().route(flowFile, relationship);
     }
 }

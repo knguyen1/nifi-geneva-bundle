@@ -18,6 +18,7 @@ package com.github.knguyen.processors.geneva;
 
 import java.time.LocalDateTime;
 
+import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.StringUtils;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
@@ -140,6 +141,8 @@ abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
                     privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory,
                     runrepUsername, runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate,
                     periodEndDate, knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags);
+
+        final MockFlowFile successFlowFile = testRunner.getFlowFilesForRelationship(BaseExecuteGeneva.REL_SUCCESS).get(0);
 
         return true;
     }
