@@ -46,6 +46,9 @@ public class GenevaTestRunner {
     private String reportConsolidation;
     private String extraFlags;
 
+    // report-specific args
+    private String rslName;
+
     private Boolean testSucceed = false;
 
     public static class Builder {
@@ -70,6 +73,9 @@ public class GenevaTestRunner {
         private LocalDateTime priorKnowledgeDate;
         private String reportConsolidation;
         private String extraFlags;
+
+        // report-specific args
+        private String rslName;
 
         public Builder withHostname(String hostname) {
             this.hostname = hostname;
@@ -176,6 +182,11 @@ public class GenevaTestRunner {
             return this;
         }
 
+        public Builder withRSLName(String rslName) {
+            this.rslName = rslName;
+            return this;
+        }
+
         public GenevaTestRunner build() {
             return new GenevaTestRunner(this);
         }
@@ -203,13 +214,14 @@ public class GenevaTestRunner {
         this.priorKnowledgeDate = builder.priorKnowledgeDate;
         this.reportConsolidation = builder.reportConsolidation;
         this.extraFlags = builder.extraFlags;
+        this.rslName = builder.rslName;
     }
 
     public GenevaTestRunner execute(IExecuteGenevaTest testRunner) {
         this.testSucceed = testRunner.executeTest(hostname, port, sshAuthenticationStrategy, username, password,
                 privateKeyPath, privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory,
                 runrepUsername, runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate,
-                periodEndDate, knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags);
+                periodEndDate, knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName);
 
         return this;
     }
@@ -218,7 +230,7 @@ public class GenevaTestRunner {
         testRunner.assertValid(hostname, port, sshAuthenticationStrategy, username, password, privateKeyPath,
                 privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory, runrepUsername,
                 runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate, periodEndDate,
-                knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags);
+                knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName);
         return this;
     }
 
@@ -226,7 +238,7 @@ public class GenevaTestRunner {
         testRunner.assertNotValid(hostname, port, sshAuthenticationStrategy, username, password, privateKeyPath,
                 privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory, runrepUsername,
                 runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate, periodEndDate,
-                knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags);
+                knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName);
         return this;
     }
 

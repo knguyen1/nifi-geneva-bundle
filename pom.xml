@@ -24,7 +24,7 @@
 
   <groupId>com.github.knguyen</groupId>
   <artifactId>nifi-geneva-bundle</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0</version>
   <packaging>pom</packaging>
 
   <modules>
@@ -34,7 +34,7 @@
 
   <properties>
     <nifi.version>1.24.0</nifi.version>
-    <nifi.geneva.bundle.version>1.0.0-SNAPSHOT</nifi.geneva.bundle.version>
+    <nifi.geneva.bundle.version>1.0.0</nifi.geneva.bundle.version>
     <sshd.version>2.11.0</sshd.version>
     <bouncycastle.version>1.77</bouncycastle.version>
   </properties>
