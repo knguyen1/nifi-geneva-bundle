@@ -29,6 +29,12 @@ import java.time.format.DateTimeFormatter;
 
 abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
 
+    protected static String HOSTNAME = "my.geneva.server.com";
+    protected static String USERNAME = "foo";
+    protected static String PASSWORD = "bar";
+    protected static String RUNREP_USERNAME = "runrepusr";
+    protected static String RUNREP_PASSWORD = "runreppass";
+
     protected TestRunner testRunner;
 
     protected boolean argumentsHaveBeenSet = false;
@@ -41,7 +47,7 @@ abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
             LocalDateTime priorKnowledgeDate, String reportConsolidation, String extraFlags, String rslName) {
         if (StringUtils.isNotBlank(rslName))
             testRunner.setProperty("rsl-name", rslName);
-        
+
         if (StringUtils.isNotBlank(hostname))
             testRunner.setProperty(BaseExecuteGeneva.HOSTNAME, hostname);
 
@@ -145,7 +151,12 @@ abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
                     runrepUsername, runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate,
                     periodEndDate, knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName);
 
-        final MockFlowFile successFlowFile = testRunner.getFlowFilesForRelationship(BaseExecuteGeneva.REL_SUCCESS).get(0);
+        // queue up and run
+        testRunner.enqueue("test");
+        testRunner.run();
+
+        final MockFlowFile successFlowFile = testRunner.getFlowFilesForRelationship(BaseExecuteGeneva.REL_SUCCESS)
+                .get(0);
 
         return true;
     }
@@ -181,15 +192,4 @@ abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
 
         testRunner.assertNotValid();
     }
-
-    // @BeforeEach
-    // public void init() {
-    // testRunner = TestRunners.newTestRunner(BaseExecuteGeneva.class);
-    // }
-
-    // @Test
-    // void testProcessor() {
-
-    // }
-
 }

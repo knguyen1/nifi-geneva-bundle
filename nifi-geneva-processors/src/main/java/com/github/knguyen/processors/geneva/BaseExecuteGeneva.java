@@ -31,6 +31,7 @@ import org.apache.nifi.processors.standard.ssh.StandardSSHClientProvider;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.logging.ComponentLog;
+import org.apache.nifi.processors.standard.util.FTPTransfer;
 import org.apache.nifi.processors.standard.util.FileTransfer;
 import org.apache.nifi.processors.standard.util.SFTPTransfer;
 import org.apache.commons.lang3.tuple.Pair;
@@ -60,7 +61,11 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class BaseExecuteGeneva extends AbstractProcessor {
 
-    protected static final SSHClientProvider SSH_CLIENT_PROVIDER = new StandardSSHClientProvider();
+    protected SSHClientProvider sshClientProvider;
+
+    protected void setSSHClientProvider(SSHClientProvider sshClientProvider) {
+        this.sshClientProvider = sshClientProvider;
+    }
 
     static final AllowableValue USERNAME_PASSWORD_STRATEGY = new AllowableValue("password-authentication",
             "Password Authentication",
@@ -135,14 +140,15 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             .description(
                     "Defines the directory for storing report files. Recommended location is `/tmp` on Unix-like systems. This directory stores reports for NiFi processing. System administrators should regularly manage and clear this space for smooth operation, although processors in this bundle will make attempts to dispose any un-managed resources.")
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).sensitive(false).required(true)
-            .addValidator(StandardValidators.createDirectoryExistsValidator(true, true)).defaultValue("/tmp").build();
+            .addValidator(StandardValidators.createDirectoryExistsValidator(true, true))
+            .defaultValue(System.getProperty("java.io.tmpdir")).build();
 
     static final PropertyDescriptor PORTFOLIO_LIST = new PropertyDescriptor.Builder().name("portfolio")
             .displayName("Portfolio List")
             .description(
                     "Specifies portfolios as a comma-separated list. Enclose names containing spaces in escaped quotes, e.g., `MyPortfolio1,\\\"9000 International Fixed Income\\\",MyOtherPortfolio`.")
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false)
-            .defaultValue("${geneva.portfolio}").addValidator(Validator.VALID).build();
+            .defaultValue("${geneva.portfolio}").addValidator(CustomValidators.PORTFOLIO_LIST_VALIDATOR).build();
 
     static final PropertyDescriptor PERIOD_START_DATE = new PropertyDescriptor.Builder().name("periodstartdate")
             .displayName("Period Start Date")
@@ -219,7 +225,8 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             .description(
                     "How to consolidate the report: All for consolidated reports, GroupsOnly for group consolidated reports, and None for iterated reports with no consolidation (the default).")
             .allowableValues(CONSOLIDATE_ALL, GROUP_CONSOLIDATE, NONE_CONSOLIDATED)
-            .defaultValue(NONE_CONSOLIDATED.getValue()).required(false).build();
+            .defaultValue(NONE_CONSOLIDATED.getValue()).addValidator(Validator.VALID)
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false).build();
 
     static final Relationship REL_SUCCESS = new Relationship.Builder().name("success")
             .description("Any Geneva query that executed without errors will be routed to `success`.").build();
@@ -241,8 +248,6 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         baseDescriptors.add(PASSWORD);
         baseDescriptors.add(PRIVATE_KEY_PATH);
         baseDescriptors.add(PRIVATE_KEY_PASSPHRASE);
-        baseDescriptors.add(DATA_TIMEOUT);
-        baseDescriptors.add(FileTransfer.CONNECTION_TIMEOUT);
         baseDescriptors.add(REPORT_OUTPUT_DIRECTORY);
         baseDescriptors.add(RUNREP_USERNAME);
         baseDescriptors.add(RUNREP_PASSWORD);
@@ -256,6 +261,21 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         baseDescriptors.add(REPORT_CONSOLIDATION);
         baseDescriptors.add(EXTRA_FLAGS);
 
+        // these are SSH connection-specific details, move it to the bottom
+        baseDescriptors.add(DATA_TIMEOUT);
+        baseDescriptors.add(FileTransfer.CONNECTION_TIMEOUT);
+        baseDescriptors.add(SFTPTransfer.USE_KEEPALIVE_ON_TIMEOUT);
+        baseDescriptors.add(SFTPTransfer.KEY_ALGORITHMS_ALLOWED);
+        baseDescriptors.add(SFTPTransfer.STRICT_HOST_KEY_CHECKING);
+        baseDescriptors.add(SFTPTransfer.HOST_KEY_FILE);
+        baseDescriptors.add(FileTransfer.USE_COMPRESSION);
+        baseDescriptors.add(FileTransfer.USE_COMPRESSION);
+        baseDescriptors.add(FTPTransfer.PROXY_TYPE);
+        baseDescriptors.add(FTPTransfer.PROXY_HOST);
+        baseDescriptors.add(FTPTransfer.PROXY_PORT);
+        baseDescriptors.add(FTPTransfer.HTTP_PROXY_USERNAME);
+        baseDescriptors.add(FTPTransfer.HTTP_PROXY_PASSWORD);
+
         return baseDescriptors;
     }
 
@@ -265,9 +285,9 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
 
     @Override
     protected void init(final ProcessorInitializationContext context) {
-        descriptors = commonDescriptors();
-        descriptors.addAll(additionalDescriptors());
-        descriptors = Collections.unmodifiableList(descriptors);
+        descriptors = new ArrayList<>(additionalDescriptors()); // First add the additional descriptors
+        descriptors.addAll(commonDescriptors()); // Then add the common descriptors
+        descriptors = Collections.unmodifiableList(descriptors); // Make the list unmodifiable
 
         relationships = new HashSet<>();
         relationships.add(REL_SUCCESS);
@@ -287,7 +307,11 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
     }
 
     public RemoteCommandExecutor createExecutor(final ProcessContext context) {
-        return new SSHCommandExecutor(context, getLogger());
+        final SSHCommandExecutor executor = new SSHCommandExecutor(context, getLogger());
+        if (this.sshClientProvider != null) // need this for unit tests
+            executor.setSSHClientProvider(sshClientProvider);
+
+        return executor;
     }
 
     @Override

@@ -33,7 +33,11 @@ import net.schmizz.sshj.sftp.SFTPClient;
 import net.schmizz.sshj.sftp.SFTPException;
 
 public class SSHCommandExecutor implements RemoteCommandExecutor {
-    private static final SSHClientProvider sshClientProvider = new StandardSSHClientProvider();
+    public SSHClientProvider sshClientProvider = new StandardSSHClientProvider();
+
+    public void setSSHClientProvider(SSHClientProvider sshClientProvider) {
+        this.sshClientProvider = sshClientProvider;
+    }
 
     private final PropertyContext context;
     private final ComponentLog logger;
@@ -58,7 +62,7 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
                 .getValue();
         final String evaledPort = context.getProperty(SFTPTransfer.PORT).evaluateAttributeExpressions(flowFile)
                 .getValue();
-        final String evaledUsername = context.getProperty(SFTPTransfer.USERNAME).evaluateAttributeExpressions(flowFile)
+        final String evaledUsername = context.getProperty(FileTransfer.USERNAME).evaluateAttributeExpressions(flowFile)
                 .getValue();
         final String evaledPassword = context.getProperty(FileTransfer.PASSWORD).evaluateAttributeExpressions(flowFile)
                 .getValue();
@@ -97,7 +101,7 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
         // Configure timeout for ssh operations
         final int dataTimeout = context.getProperty(FileTransfer.DATA_TIMEOUT).asTimePeriod(TimeUnit.MILLISECONDS)
                 .intValue();
-        final int connectTimeout = context.getProperty(SFTPTransfer.CONNECTION_TIMEOUT)
+        final int connectTimeout = context.getProperty(FileTransfer.CONNECTION_TIMEOUT)
                 .asTimePeriod(TimeUnit.MILLISECONDS).intValue();
         this.sshClient.setTimeout(dataTimeout);
         this.sshClient.setConnectTimeout(connectTimeout);
@@ -153,7 +157,8 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
                 }
 
                 // wait x seconds for the file to materialise
-                FileUtils.sleepQuietly(3000);
+                if (!Boolean.TRUE.toString().equals(System.getProperty("skipSleep")))
+                    FileUtils.sleepQuietly(3000);
             }
         }
     }

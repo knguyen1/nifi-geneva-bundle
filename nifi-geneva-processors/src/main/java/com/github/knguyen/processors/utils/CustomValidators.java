@@ -100,4 +100,24 @@ public class CustomValidators {
      * {@code DateTimeValidator} with Expression Language enabled each time date-time validation is required.
      */
     public static final Validator DATETIME_VALIDATOR = new DateTimeValidator(true);
+
+    public static final Validator PORTFOLIO_LIST_VALIDATOR = (subject, input, context) -> {
+        boolean isValid = true;
+        String explanation = null;
+
+        if (input != null && !input.isEmpty()) {
+            String[] portfolios = input.split(",");
+            for (String portfolio : portfolios) {
+                portfolio = portfolio.trim();
+                if (portfolio.contains(" ") && !(portfolio.startsWith("\\\"") && portfolio.endsWith("\\\""))) {
+                    isValid = false;
+                    explanation = "Portfolio names containing spaces must be enclosed within escaped quotes.";
+                    break;
+                }
+            }
+        }
+
+        return new ValidationResult.Builder().subject(subject).input(input).valid(isValid).explanation(explanation)
+                .build();
+    };
 }
