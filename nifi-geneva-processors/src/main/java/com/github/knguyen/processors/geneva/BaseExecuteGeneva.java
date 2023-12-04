@@ -110,7 +110,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             .build();
 
     static final PropertyDescriptor DATA_TIMEOUT = new PropertyDescriptor.Builder()
-            .fromPropertyDescriptor(SFTPTransfer.DATA_TIMEOUT)
+            .fromPropertyDescriptor(FileTransfer.DATA_TIMEOUT)
             .description(
                     "Specifies the timeout duration for data transmission during command execution, like `runrep` or `rungsql`.  If you have large RSL reports or accounting runs, you should set this value to a long duration.")
             .defaultValue("5 mins").build();
@@ -240,7 +240,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         baseDescriptors.add(PRIVATE_KEY_PATH);
         baseDescriptors.add(PRIVATE_KEY_PASSPHRASE);
         baseDescriptors.add(DATA_TIMEOUT);
-        baseDescriptors.add(SFTPTransfer.CONNECTION_TIMEOUT);
+        baseDescriptors.add(FileTransfer.CONNECTION_TIMEOUT);
         baseDescriptors.add(REPORT_OUTPUT_DIRECTORY);
         baseDescriptors.add(RUNREP_USERNAME);
         baseDescriptors.add(RUNREP_PASSWORD);
@@ -313,7 +313,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             try {
                 commandExecutor.execute(command, flowFile, session);
             } catch (final GenevaException exc) {
-                reportFailure(session, flowFile, String.format("Got the error %s while executing command %.",
+                reportFailure(session, flowFile, String.format("Got the error %s while executing command %s.",
                         exc.getGenevaErrorMessage(), command.getLoggablePart()), exc);
                 return;
             } catch (final IOException exc) {
@@ -356,7 +356,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
 
             final FlowFile finalFlowFile = flowFile;
             session.commitAsync(() -> {
-                performCompletion(commandExecutor, command, context, finalFlowFile);
+                performCompletion(commandExecutor, command, finalFlowFile);
             });
         } catch (final IOException exc) {
             getLogger().error("Unexpected error occured.", exc);
@@ -438,9 +438,9 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         final String reportCommandStr = getReportCommand(context, flowfile);
         final String runrepExitStr = getRunrepExitStr();
 
-        final String runrepCommand = String.format("%s\n%s\n%s\n%s", runrepInitStr, runrepConnectStr.getLeft(),
+        final String runrepCommand = String.format("%s%n%s%n%s%n%s", runrepInitStr, runrepConnectStr.getLeft(),
                 reportCommandStr, runrepExitStr);
-        final String obfuscatedRunrepCommand = String.format("%s\n%s\n%s\n%s", runrepInitStr,
+        final String obfuscatedRunrepCommand = String.format("%s%n%s%n%s%n%s", runrepInitStr,
                 runrepConnectStr.getRight(), reportCommandStr, runrepExitStr);
 
         return new Command(runrepCommand, obfuscatedRunrepCommand);
@@ -512,7 +512,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
     }
 
     private void performCompletion(final RemoteCommandExecutor commandExecutor, final ICommand command,
-            final ProcessContext context, final FlowFile flowfile) {
+            final FlowFile flowfile) {
         try {
             commandExecutor.deleteFile(command, flowfile);
         } catch (final FileNotFoundException fnfe) {

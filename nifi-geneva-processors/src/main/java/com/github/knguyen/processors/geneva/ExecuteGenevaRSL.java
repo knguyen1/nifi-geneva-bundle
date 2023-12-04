@@ -42,7 +42,7 @@ public class ExecuteGenevaRSL extends BaseExecuteGeneva {
         final String outputFilename = StringUtils.getGuidFilename(outputDirectory);
         final String reportParameters = getReportParameters(context, flowfile);
 
-        return String.format("read %s.rsl\nrunfile %s -f csv -o \"%s\" %s", rslName, rslName, outputFilename,
+        return String.format("read %s.rsl%nrunfile %s -f csv -o \"%s\" %s", rslName, rslName, outputFilename,
                 reportParameters);
     }
 }
