@@ -15,8 +15,9 @@ import org.apache.nifi.util.StringUtils;
  * where commands are executed in a secure environment and there's a need to handle sensitive information cautiously.
  */
 public class Command implements ICommand {
-    private final String command;
+    private final String commandToExecute;
     private final String obfuscatedCommand;
+    private final String outputResource;
 
     /**
      * Constructs a new Command instance with specified unobfuscated and obfuscated command strings.
@@ -29,17 +30,18 @@ public class Command implements ICommand {
      * @throws IllegalArgumentException
      *             if either command or obfuscatedCommand is null.
      */
-    public Command(String command, String obfuscatedCommand) {
+    public Command(String command, String obfuscatedCommand, String outputResource) {
         if (StringUtils.isBlank(command) || StringUtils.isBlank(obfuscatedCommand)) {
             throw new IllegalArgumentException("Command and obfuscated command must not be null.");
         }
-        this.command = command;
+        this.commandToExecute = command;
         this.obfuscatedCommand = obfuscatedCommand;
+        this.outputResource = outputResource;
     }
 
     @Override
     public String getCommand() {
-        return command;
+        return commandToExecute;
     }
 
     @Override
@@ -70,7 +72,10 @@ public class Command implements ICommand {
      */
     @Override
     public String getOutputResource() {
-        return extractPath(command);
+        if (StringUtils.isNotBlank(outputResource))
+            return outputResource;
+
+        return extractPath(commandToExecute);
     }
 
     /**

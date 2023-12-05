@@ -2,13 +2,19 @@ package com.github.knguyen.processors.geneva;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessSession;
+import org.apache.nifi.processors.standard.ssh.SSHClientProvider;
 
 import com.github.knguyen.processors.ssh.ICommand;
 
+import net.schmizz.sshj.sftp.RemoteFile;
+
 public interface RemoteCommandExecutor extends Closeable {
+    void setSSHClientProvider(SSHClientProvider sshClientProvider);
+
     String getProtocolName();
 
     boolean isClosed();
@@ -20,6 +26,8 @@ public interface RemoteCommandExecutor extends Closeable {
 
     FlowFile getRemoteFile(final ICommand command, final FlowFile originalFlowFile, final ProcessSession processSession,
             IStreamHandler streamHandler) throws IOException;
+
+    InputStream getStreamFromRemoteFile(final RemoteFile remoteFile) throws IOException;
 
     void deleteFile(final ICommand command, final FlowFile flowFile) throws IOException;
 

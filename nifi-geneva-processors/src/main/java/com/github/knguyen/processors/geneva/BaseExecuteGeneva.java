@@ -39,6 +39,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import com.github.knguyen.processors.ssh.Command;
 import com.github.knguyen.processors.ssh.ICommand;
 import com.github.knguyen.processors.ssh.SSHCommandExecutor;
+import com.github.knguyen.processors.ssh.SSHCommandExecutorProvider;
 import com.github.knguyen.processors.utils.CustomValidators;
 
 import java.io.FileNotFoundException;
@@ -62,9 +63,15 @@ import java.util.concurrent.TimeUnit;
 public abstract class BaseExecuteGeneva extends AbstractProcessor {
 
     protected SSHClientProvider sshClientProvider;
+    protected RemoteCommandExecutorProvider executorProvider = new SSHCommandExecutorProvider();
+    protected RemoteCommandExecutor remoteCommandExecutor;
 
-    protected void setSSHClientProvider(SSHClientProvider sshClientProvider) {
+    protected void setSSHClientProvider(final SSHClientProvider sshClientProvider) {
         this.sshClientProvider = sshClientProvider;
+    }
+
+    protected void setExecutorProvider(final RemoteCommandExecutorProvider commandExecutorProvider) {
+        this.executorProvider = commandExecutorProvider;
     }
 
     static final AllowableValue USERNAME_PASSWORD_STRATEGY = new AllowableValue("password-authentication",
@@ -135,11 +142,18 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).sensitive(false).required(false)
             .addValidator(StandardValidators.PORT_VALIDATOR).build();
 
-    static final PropertyDescriptor REPORT_OUTPUT_DIRECTORY = new PropertyDescriptor.Builder().name("output-directory")
-            .displayName("Report Output Directory")
+    static final PropertyDescriptor REPORT_OUTPUT_PATH = new PropertyDescriptor.Builder().name("report-output-path")
+            .displayName("Report Output Path")
             .description(
-                    "Defines the directory for storing report files. Recommended location is `/tmp` on Unix-like systems. This directory stores reports for NiFi processing. System administrators should regularly manage and clear this space for smooth operation, although processors in this bundle will make attempts to dispose any un-managed resources.")
-            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).sensitive(false).required(true)
+                    "Specifies the absolute, fully-qualified path for the report output, which corresponds to the `-o` option for `runrep`. The path should be accessible and writable by `runrep`. When this property is set, the `Report Output Directory` property is ignored. If this property is not set, NiFi will use the `Report Output Directory` value and generate a filename matching the FlowFile's `UUID`.  Keep in mind that by using this property, you effectively set a constant filepath for writing reports.  This means that successive executions of flowfiles in the same given pipeline will overwrite any existing reports at this locatio.  This could be desirable for certain scenarios, such as when using processing pipelines external to NiFi that require data at a fixed location.")
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).sensitive(false).required(false)
+            .addValidator(CustomValidators.DIRECTORY_EXISTS_FROM_PATH_VALIDATOR).build();
+
+    static final PropertyDescriptor REPORT_OUTPUT_DIRECTORY = new PropertyDescriptor.Builder()
+            .name("report-output-directory").displayName("Report Output Directory")
+            .description(
+                    "Defines the directory for storing report files. This directory stores reports for NiFi processing. System administrators should regularly manage and clear this space for smooth operation, although processors in this bundle will make attempts to dispose any un-managed resources.  This value defaults to the system-dependent 'temporary path' value.")
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).sensitive(false).required(false)
             .addValidator(StandardValidators.createDirectoryExistsValidator(true, true))
             .defaultValue(System.getProperty("java.io.tmpdir")).build();
 
@@ -248,6 +262,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         baseDescriptors.add(PASSWORD);
         baseDescriptors.add(PRIVATE_KEY_PATH);
         baseDescriptors.add(PRIVATE_KEY_PASSPHRASE);
+        baseDescriptors.add(REPORT_OUTPUT_PATH);
         baseDescriptors.add(REPORT_OUTPUT_DIRECTORY);
         baseDescriptors.add(RUNREP_USERNAME);
         baseDescriptors.add(RUNREP_PASSWORD);
@@ -306,12 +321,15 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         return descriptors;
     }
 
-    public RemoteCommandExecutor createExecutor(final ProcessContext context) {
-        final SSHCommandExecutor executor = new SSHCommandExecutor(context, getLogger());
-        if (this.sshClientProvider != null) // need this for unit tests
-            executor.setSSHClientProvider(sshClientProvider);
+    public RemoteCommandExecutor createOrGetExecutor(final ProcessContext context) {
+        if (remoteCommandExecutor == null) {
+            remoteCommandExecutor = executorProvider.createExecutor(context, getLogger());
+        }
 
-        return executor;
+        if (this.sshClientProvider != null) // need this for unit tests
+            remoteCommandExecutor.setSSHClientProvider(sshClientProvider);
+
+        return remoteCommandExecutor;
     }
 
     @Override
@@ -329,7 +347,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         final String genevaUser = context.getProperty(RUNREP_USERNAME).evaluateAttributeExpressions(flowFile)
                 .getValue();
 
-        try (final RemoteCommandExecutor commandExecutor = createExecutor(context)) {
+        try (final RemoteCommandExecutor commandExecutor = createOrGetExecutor(context)) {
 
             // execute the cmd on the server
             final ICommand command = getCommand(context, flowFile);
@@ -396,7 +414,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
      * @return A string "exit\nEOF" indicating the commands to terminate the 'runrep' process.
      */
     protected String getRunrepExitStr() {
-        return "exit\nEOF";
+        return "exit\nEOF\n";
     }
 
     /**
@@ -454,9 +472,53 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         final String obfuscatedRunrepCommand = String.format("%s%n%s%n%s%n%s", runrepInitStr,
                 runrepConnectStr.getRight(), reportCommandStr, runrepExitStr);
 
-        return new Command(runrepCommand, obfuscatedRunrepCommand);
+        return new Command(runrepCommand, obfuscatedRunrepCommand, getOuputFilename(context, flowfile));
     }
 
+    /**
+     * Determines the output file name for the report based on the processor context and a flowfile.
+     *
+     * Initially, it tries to get the output filename from the 'REPORT_OUTPUT_PATH' property. If this property is set
+     * and not blank, it returns this value as the output file name.
+     *
+     * If 'REPORT_OUTPUT_PATH' is not set or is blank, it uses the 'REPORT_OUTPUT_DIRECTORY' property and appends a
+     * filename generated using the flowfile's UUID to it. This new path is returned as the output file name.
+     *
+     * @param context
+     *            The process context containing the properties set by the user.
+     * @param flowfile
+     *            The flowfile being operated on.
+     *
+     * @return A string representing the output file name.
+     */
+    protected final String getOuputFilename(final ProcessContext context, final FlowFile flowfile) {
+        final String outputFilename = context.getProperty(REPORT_OUTPUT_PATH).evaluateAttributeExpressions(flowfile)
+                .getValue();
+        if (StringUtils.isNotBlank(outputFilename))
+            return outputFilename;
+
+        final String outputDirectory = context.getProperty(REPORT_OUTPUT_DIRECTORY)
+                .evaluateAttributeExpressions(flowfile).getValue();
+        return com.github.knguyen.processors.utils.StringUtils.getGuidFilename(outputDirectory, flowfile);
+    }
+
+    /**
+     * Constructs a string of report parameters based on the processor context and a flowfile.
+     *
+     * This method formats each property's value into a string parameter if the property value is set and not blank. The
+     * parameters are then joined together into a single string with a space between each one.
+     *
+     * The method handles the formatting of the following properties: 'PORTFOLIO_LIST', 'PERIOD_START_DATE',
+     * 'PERIOD_END_DATE', 'KNOWLEDGE_DATE', 'PRIOR_KNOWLEDGE_DATE', 'ACCOUNTING_RUN_TYPE', 'REPORT_CONSOLIDATION', and
+     * 'EXTRA_FLAGS'. See individual formatting methods for more details on how each property is handled.
+     *
+     * @param context
+     *            The process context containing the properties set by the user.
+     * @param flowfile
+     *            The flowfile being operated on.
+     *
+     * @return A string of report parameters.
+     */
     protected String getReportParameters(final ProcessContext context, final FlowFile flowfile) {
         return Stream.of(
                 formatParameter("-p",
@@ -473,16 +535,57 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
                 formatExtraFlags(context, flowfile)).filter(Objects::nonNull).collect(Collectors.joining(" "));
     }
 
+    /**
+     * Formats a parameter name and its value into a string if the value is set and not blank.
+     *
+     * This method takes a parameter name and its value as inputs. If the parameter value is not blank, it returns a
+     * string in the form of "{paramName} {paramValue}". If the parameter value is blank, the function returns null.
+     *
+     * @param paramName
+     *            The name of the parameter to be formatted.
+     * @param paramValue
+     *            The value of the parameter to be formatted.
+     *
+     * @return A formatted string of the parameter name and its value, or null if the value is blank.
+     */
     private String formatParameter(String paramName, String paramValue) {
         return org.apache.nifi.util.StringUtils.isNotBlank(paramValue) ? String.format("%s %s", paramName, paramValue)
                 : null;
     }
 
+    /**
+     * Retrieves and formats extra flags, if any, from the ProcessContext.
+     *
+     * This method retrieves the extra flags property from the ProcessContext. If the extra flags property value is not
+     * blank, it returns the trimmed property value. If the value is blank, the function returns null.
+     *
+     * @param context
+     *            The process context to extract the property value.
+     * @param flowfile
+     *            The flowfile to evaluate attribute expressions against.
+     *
+     * @return The trimmed string of extra flags, or null if the extra flags property value is blank.
+     */
     private String formatExtraFlags(final ProcessContext context, final FlowFile flowfile) {
         String extraFlags = context.getProperty(EXTRA_FLAGS).evaluateAttributeExpressions(flowfile).getValue();
         return org.apache.nifi.util.StringUtils.isNotBlank(extraFlags) ? extraFlags.trim() : null;
     }
 
+    /**
+     * Retrieves and formats the report consolidation property from the ProcessContext, if available.
+     *
+     * This method retrieves the report consolidation property from the ProcessContext. If the property value is not
+     * equal to 'NONE_CONSOLIDATED' and is not blank, it returns the property value. If the property value is
+     * 'NONE_CONSOLIDATED', null, or blank, the function returns null.
+     *
+     * @param context
+     *            The process context to extract the property value.
+     * @param flowfile
+     *            The flowfile to evaluate attribute expressions against.
+     *
+     * @return The string of the report consolidation property value, or null if the value is 'NONE_CONSOLIDATED', null,
+     *         or blank.
+     */
     private String formatReportConsolidation(final ProcessContext context, final FlowFile flowfile) {
         String consolidationValue = context.getProperty(REPORT_CONSOLIDATION).evaluateAttributeExpressions(flowfile)
                 .getValue();

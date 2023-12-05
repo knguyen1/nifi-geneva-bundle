@@ -34,7 +34,7 @@ import net.schmizz.sshj.sftp.SFTPClient;
 import net.schmizz.sshj.sftp.SFTPException;
 
 public class SSHCommandExecutor implements RemoteCommandExecutor {
-    public SSHClientProvider sshClientProvider = new StandardSSHClientProvider();
+    protected SSHClientProvider sshClientProvider = new StandardSSHClientProvider();
 
     public void setSSHClientProvider(SSHClientProvider sshClientProvider) {
         this.sshClientProvider = sshClientProvider;
@@ -178,7 +178,7 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
         }
     }
 
-    protected InputStream getStreamFromRemoteFile(final RemoteFile remoteFile) throws IOException {
+    public InputStream getStreamFromRemoteFile(final RemoteFile remoteFile) throws IOException {
         try (final RemoteFile.ReadAheadRemoteFileInputStream rfis = remoteFile.new ReadAheadRemoteFileInputStream(16)) {
             return rfis;
         }

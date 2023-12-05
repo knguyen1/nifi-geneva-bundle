@@ -16,16 +16,20 @@
  */
 package com.github.knguyen.processors.geneva;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.time.LocalDateTime;
 
 import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.StringUtils;
 import org.apache.nifi.util.TestRunner;
-import org.apache.nifi.util.TestRunners;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
 
@@ -144,7 +148,8 @@ abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
             String sftpTransferConnectionTimeout, String reportOutputDirectory, String runrepUsername,
             String runrepPassword, Integer genevaAga, String accountingRunType, String portfolioList,
             LocalDateTime periodStartDate, LocalDateTime periodEndDate, LocalDateTime knowledgeDate,
-            LocalDateTime priorKnowledgeDate, String reportConsolidation, String extraFlags, String rslName) {
+            LocalDateTime priorKnowledgeDate, String reportConsolidation, String extraFlags, String rslName,
+            Map<String, String> expectedAttributes, String expectedContent, String expectedCommandPattern) {
         if (!argumentsHaveBeenSet)
             setArguments(hostname, port, sshAuthenticationStrategy, username, password, privateKeyPath,
                     privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory,
@@ -158,6 +163,34 @@ abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
         final MockFlowFile successFlowFile = testRunner.getFlowFilesForRelationship(BaseExecuteGeneva.REL_SUCCESS)
                 .get(0);
 
+        if (StringUtils.isNotBlank(expectedContent))
+            assertEquals(expectedContent, successFlowFile.getContent());
+
+        if (expectedAttributes != null) {
+            Map<String, String> actualAttributes = successFlowFile.getAttributes();
+            for (Map.Entry<String, String> expectedAttribute : expectedAttributes.entrySet()) {
+                assertTrue(actualAttributes.containsKey(expectedAttribute.getKey()));
+                assertEquals(expectedAttribute.getValue(), actualAttributes.get(expectedAttribute.getKey()));
+            }
+        }
+
+        final String sshRemoteFileName = successFlowFile.getAttribute("ssh.remote.filename");
+        final String genevaRunrepElapsedMs = successFlowFile.getAttribute("geneva.runrep.elapsedms");
+
+        assertNotNull(sshRemoteFileName);
+        assertTrue(Integer.parseInt(genevaRunrepElapsedMs) > 0);
+
+        if (StringUtils.isNotBlank(expectedCommandPattern)) {
+            final Pattern pattern = Pattern.compile(expectedCommandPattern, Pattern.MULTILINE);
+            final String genevaRunrepCommandAttribute = successFlowFile.getAttribute("geneva.runrep.command");
+            final Matcher matcher = pattern.matcher(genevaRunrepCommandAttribute);
+            assertTrue(matcher.matches());
+        }
+
+        testRunner.assertTransferCount(BaseExecuteGeneva.REL_SUCCESS, 1);
+        testRunner.assertTransferCount(BaseExecuteGeneva.REL_FAILURE, 0);
+        testRunner.assertTransferCount(BaseExecuteGeneva.REL_GENEVA_FAILURE, 0);
+
         return true;
     }
 
@@ -167,7 +200,8 @@ abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
             String sftpTransferConnectionTimeout, String reportOutputDirectory, String runrepUsername,
             String runrepPassword, Integer genevaAga, String accountingRunType, String portfolioList,
             LocalDateTime periodStartDate, LocalDateTime periodEndDate, LocalDateTime knowledgeDate,
-            LocalDateTime priorKnowledgeDate, String reportConsolidation, String extraFlags, String rslName) {
+            LocalDateTime priorKnowledgeDate, String reportConsolidation, String extraFlags, String rslName,
+            Map<String, String> expectedAttributes, String expectedContent, String expectedCommandPattern) {
         if (!argumentsHaveBeenSet)
             setArguments(hostname, port, sshAuthenticationStrategy, username, password, privateKeyPath,
                     privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory,
@@ -183,7 +217,8 @@ abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
             String sftpTransferConnectionTimeout, String reportOutputDirectory, String runrepUsername,
             String runrepPassword, Integer genevaAga, String accountingRunType, String portfolioList,
             LocalDateTime periodStartDate, LocalDateTime periodEndDate, LocalDateTime knowledgeDate,
-            LocalDateTime priorKnowledgeDate, String reportConsolidation, String extraFlags, String rslName) {
+            LocalDateTime priorKnowledgeDate, String reportConsolidation, String extraFlags, String rslName,
+            Map<String, String> expectedAttributes, String expectedContent, String expectedCommandPattern) {
         if (!argumentsHaveBeenSet)
             setArguments(hostname, port, sshAuthenticationStrategy, username, password, privateKeyPath,
                     privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory,

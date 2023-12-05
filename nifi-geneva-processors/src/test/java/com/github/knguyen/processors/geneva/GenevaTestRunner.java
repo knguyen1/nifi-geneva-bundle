@@ -3,6 +3,7 @@ package com.github.knguyen.processors.geneva;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 /**
  * The `GenevaTestRunner` class is used for running Geneva tests via SSH. It encapsulates various configuration
@@ -49,6 +50,11 @@ public class GenevaTestRunner {
     // report-specific args
     private String rslName;
 
+    // flowfile content checks
+    private Map<String, String> expectedAttributes;
+    private String expectedContent;
+    private String expectedCommandPattern;
+
     private Boolean testSucceed = false;
 
     public static class Builder {
@@ -76,6 +82,26 @@ public class GenevaTestRunner {
 
         // report-specific args
         private String rslName;
+
+        // flowfile content checks
+        private Map<String, String> expectedAttributes;
+        private String expectedContent;
+        private String expectedCommandPattern;
+
+        public Builder withExpectedAttributes(Map<String, String> expectedAttributes) {
+            this.expectedAttributes = expectedAttributes;
+            return this;
+        }
+
+        public Builder withExpectedCommandPattern(String expectedCommandPattern) {
+            this.expectedCommandPattern = expectedCommandPattern;
+            return this;
+        }
+
+        public Builder withExpectedContent(String expectedContent) {
+            this.expectedContent = expectedContent;
+            return this;
+        }
 
         public Builder withHostname(String hostname) {
             this.hostname = hostname;
@@ -215,13 +241,17 @@ public class GenevaTestRunner {
         this.reportConsolidation = builder.reportConsolidation;
         this.extraFlags = builder.extraFlags;
         this.rslName = builder.rslName;
+        this.expectedAttributes = builder.expectedAttributes;
+        this.expectedContent = builder.expectedContent;
+        this.expectedCommandPattern = builder.expectedCommandPattern;
     }
 
     public GenevaTestRunner execute(IExecuteGenevaTest testRunner) {
         this.testSucceed = testRunner.executeTest(hostname, port, sshAuthenticationStrategy, username, password,
                 privateKeyPath, privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory,
                 runrepUsername, runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate,
-                periodEndDate, knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName);
+                periodEndDate, knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName,
+                expectedAttributes, expectedContent, expectedCommandPattern);
 
         return this;
     }
@@ -230,7 +260,8 @@ public class GenevaTestRunner {
         testRunner.assertValid(hostname, port, sshAuthenticationStrategy, username, password, privateKeyPath,
                 privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory, runrepUsername,
                 runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate, periodEndDate,
-                knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName);
+                knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName, expectedAttributes,
+                expectedContent, expectedCommandPattern);
         return this;
     }
 
@@ -238,7 +269,8 @@ public class GenevaTestRunner {
         testRunner.assertNotValid(hostname, port, sshAuthenticationStrategy, username, password, privateKeyPath,
                 privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory, runrepUsername,
                 runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate, periodEndDate,
-                knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName);
+                knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName, expectedAttributes,
+                expectedContent, expectedCommandPattern);
         return this;
     }
 

@@ -16,6 +16,7 @@
  */
 package com.github.knguyen.processors.utils;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
@@ -120,4 +121,67 @@ public class CustomValidators {
         return new ValidationResult.Builder().subject(subject).input(input).valid(isValid).explanation(explanation)
                 .build();
     };
+
+    public static final Validator DIRECTORY_EXISTS_FROM_PATH_VALIDATOR = new DirectoryExistsValidator(true, true);
+
+    public static class DirectoryExistsValidator implements Validator {
+
+        private final boolean allowEL;
+        private final boolean create;
+
+        public DirectoryExistsValidator(final boolean allowExpressionLanguage, final boolean create) {
+            this.allowEL = allowExpressionLanguage;
+            this.create = create;
+        }
+
+        @Override
+        public ValidationResult validate(final String subject, final String value, final ValidationContext context) {
+            if (context.isExpressionLanguageSupported(subject) && context.isExpressionLanguagePresent(value)) {
+                return new ValidationResult.Builder().subject(subject).input(value)
+                        .explanation("Expression Language Present").valid(true).build();
+            }
+
+            final String substituted;
+            if (allowEL) {
+                try {
+                    substituted = context.newPropertyValue(value).evaluateAttributeExpressions().getValue();
+                } catch (final Exception e) {
+                    return new ValidationResult.Builder().subject(subject).input(value).valid(false)
+                            .explanation("Not a valid Expression Language value: " + e.getMessage()).build();
+                }
+
+                if (substituted.trim().isEmpty() && !value.trim().isEmpty()) {
+                    // User specified an Expression and nothing more... assume valid.
+                    return new ValidationResult.Builder().subject(subject).input(value).valid(true).build();
+                }
+            } else {
+                substituted = value;
+            }
+
+            String path = substituted;
+            // If path has an extension, extract the directory component
+            if (path.contains(".")) {
+                path = new File(path).getParent();
+            }
+
+            String reason = null;
+            try {
+                final File file = new File(path);
+                if (!file.exists()) {
+                    if (!create) {
+                        reason = "Directory does not exist";
+                    } else if (!file.mkdirs()) {
+                        reason = "Directory does not exist and could not be created";
+                    }
+                } else if (!file.isDirectory()) {
+                    reason = "Path does not point to a directory";
+                }
+            } catch (final Exception e) {
+                reason = "Value is not a valid directory name";
+            }
+
+            return new ValidationResult.Builder().subject(subject).input(value).explanation(reason)
+                    .valid(reason == null).build();
+        }
+    }
 }

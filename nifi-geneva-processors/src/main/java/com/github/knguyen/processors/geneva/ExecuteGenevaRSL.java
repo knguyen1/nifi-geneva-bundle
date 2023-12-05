@@ -8,8 +8,7 @@ import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.util.StandardValidators;
-
-import com.github.knguyen.processors.utils.StringUtils;
+import org.apache.nifi.util.StringUtils;
 
 public class ExecuteGenevaRSL extends BaseExecuteGeneva {
 
@@ -37,12 +36,14 @@ public class ExecuteGenevaRSL extends BaseExecuteGeneva {
                 ? rslNameProperty.substring(0, rslNameProperty.length() - 4) : rslNameProperty;
 
         // format the temporary filename
-        final String outputDirectory = context.getProperty(REPORT_OUTPUT_DIRECTORY)
-                .evaluateAttributeExpressions(flowfile).getValue();
-        final String outputFilename = StringUtils.getGuidFilename(outputDirectory);
+        final String outputFilename = getOuputFilename(context, flowfile);
         final String reportParameters = getReportParameters(context, flowfile);
 
-        return String.format("read %s.rsl%nrunfile %s -f csv -o \"%s\" %s", rslName, rslName, outputFilename,
-                reportParameters);
+        if (StringUtils.isNotBlank(reportParameters)) {
+            return String.format("read %s.rsl%nrunfile %s -f csv -o \"%s\" %s", rslName, rslName, outputFilename,
+                    reportParameters);
+        } else {
+            return String.format("read %s.rsl%nrunfile %s -f csv -o \"%s\"", rslName, rslName, outputFilename);
+        }
     }
 }
