@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -171,11 +172,15 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
         final String resource = command.getOutputResource();
         try (final SFTPClient sftpClient = client.newSFTPClient()) {
             try (final RemoteFile remoteFile = sftpClient.open(resource)) {
-                try (final RemoteFile.ReadAheadRemoteFileInputStream rfis = remoteFile.new ReadAheadRemoteFileInputStream(
-                        16)) {
-                    return streamHandler.handleStream(originalFlowFile, processSession, rfis);
-                }
+                final InputStream in = getStreamFromRemoteFile(remoteFile);
+                return streamHandler.handleStream(originalFlowFile, processSession, in);
             }
+        }
+    }
+
+    protected InputStream getStreamFromRemoteFile(final RemoteFile remoteFile) throws IOException {
+        try (final RemoteFile.ReadAheadRemoteFileInputStream rfis = remoteFile.new ReadAheadRemoteFileInputStream(16)) {
+            return rfis;
         }
     }
 
