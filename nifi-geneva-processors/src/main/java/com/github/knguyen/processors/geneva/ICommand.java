@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.knguyen.processors.ssh;
+package com.github.knguyen.processors.geneva;
 
 /**
  * Interface representing a command with both obfuscated and unobfuscated forms. This interface provides methods to

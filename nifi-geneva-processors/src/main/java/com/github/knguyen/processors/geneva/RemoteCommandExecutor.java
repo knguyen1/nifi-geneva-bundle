@@ -24,8 +24,6 @@ import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processors.standard.ssh.SSHClientProvider;
 
-import com.github.knguyen.processors.ssh.ICommand;
-
 import net.schmizz.sshj.sftp.RemoteFile;
 
 public interface RemoteCommandExecutor extends Closeable {

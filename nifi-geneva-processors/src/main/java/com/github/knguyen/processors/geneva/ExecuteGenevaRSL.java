@@ -24,7 +24,6 @@ import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.util.StandardValidators;
-import org.apache.nifi.util.StringUtils;
 
 public class ExecuteGenevaRSL extends BaseExecuteGeneva {
 
@@ -45,21 +44,7 @@ public class ExecuteGenevaRSL extends BaseExecuteGeneva {
     }
 
     @Override
-    protected String getReportCommand(final ProcessContext context, final FlowFile flowfile) {
-        // get and clean the RSL name
-        final String rslNameProperty = context.getProperty(RSL_NAME).evaluateAttributeExpressions(flowfile).getValue();
-        final String rslName = rslNameProperty.endsWith(".rsl")
-                ? rslNameProperty.substring(0, rslNameProperty.length() - 4) : rslNameProperty;
-
-        // format the temporary filename
-        final String outputFilename = getOuputFilename(context, flowfile);
-        final String reportParameters = getReportParameters(context, flowfile);
-
-        if (StringUtils.isNotBlank(reportParameters)) {
-            return String.format("read \"%s.rsl\"%nrunfile \"%s\" -f csv -o \"%s\" %s", rslName, rslName,
-                    outputFilename, reportParameters);
-        } else {
-            return String.format("read \"%s.rsl\"%nrunfile \"%s\" -f csv -o \"%s\"", rslName, rslName, outputFilename);
-        }
+    protected ICommand getCommand(final ProcessContext context, final FlowFile flowfile) {
+        return new RSLCommand(context, flowfile);
     }
 }
