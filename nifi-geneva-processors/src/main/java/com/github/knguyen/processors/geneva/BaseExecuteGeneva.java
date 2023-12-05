@@ -27,7 +27,6 @@ import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.processors.standard.ssh.SSHClientProvider;
-import org.apache.nifi.processors.standard.ssh.StandardSSHClientProvider;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.logging.ComponentLog;
@@ -38,7 +37,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import com.github.knguyen.processors.ssh.Command;
 import com.github.knguyen.processors.ssh.ICommand;
-import com.github.knguyen.processors.ssh.SSHCommandExecutor;
 import com.github.knguyen.processors.ssh.SSHCommandExecutorProvider;
 import com.github.knguyen.processors.utils.CustomValidators;
 
