@@ -91,6 +91,7 @@ class ExecuteGenvaRSLTest extends BaseExecuteGenevaTest {
     @Test
     void testBasicRunEndToEnd() throws Exception {
         final Map<String, String> expectedAttributes = new HashMap<>();
+        expectedAttributes.put("ssh.remote.username", "foo");
         expectedAttributes.put("geneva.runrep.user", "runrepusr");
         expectedAttributes.put("ssh.remote.port", "22");
         expectedAttributes.put("ssh.remote.host", "my.geneva.server.com");
@@ -98,8 +99,8 @@ class ExecuteGenvaRSLTest extends BaseExecuteGenevaTest {
 
         final String commandPattern = "runrep -f empty.lst -b << EOF" + System.lineSeparator() + //
                 "connect runrepusr/\\*\\*\\*\\*\\*\\*\\*\\*\\* -k 9999" + System.lineSeparator() + //
-                "read netassets.rsl" + System.lineSeparator() + //
-                "runfile netassets -f csv -o \"/tmp/[a-f0-9\\-]*\\.csv\"" + System.lineSeparator() + //
+                "read \"netassets.rsl\"" + System.lineSeparator() + //
+                "runfile \"netassets\" -f csv -o \"/tmp/[a-f0-9\\-]*\\.csv\"" + System.lineSeparator() + //
                 "exit" + System.lineSeparator() + //
                 "EOF\n";
 
@@ -118,8 +119,8 @@ class ExecuteGenvaRSLTest extends BaseExecuteGenevaTest {
             public boolean matches(String argument) {
                 return argument.matches("runrep -f empty.lst -b << EOF" + System.lineSeparator() + //
                         "connect runrepusr/runreppass -k 9999" + System.lineSeparator() + //
-                        "read netassets.rsl" + System.lineSeparator() + //
-                        "runfile netassets -f csv -o \"/tmp/[a-f0-9\\-]*\\.csv\"" + System.lineSeparator() + //
+                        "read \"netassets.rsl\"" + System.lineSeparator() + //
+                        "runfile \"netassets\" -f csv -o \"/tmp/[a-f0-9\\-]*\\.csv\"" + System.lineSeparator() + //
                         "exit" + System.lineSeparator() + //
                         "EOF\n");
             }
@@ -129,6 +130,37 @@ class ExecuteGenvaRSLTest extends BaseExecuteGenevaTest {
             @Override
             public boolean matches(String argument) {
                 return argument.matches("/tmp/[a-f0-9\\-]*\\.csv");
+            }
+        }));
+    }
+
+    @Test
+    void testRunWithDifferentUsernamePasswords() throws Exception {
+        final String commandPattern = "runrep -f empty.lst -b << EOF" + System.lineSeparator() + //
+                "connect fez/\\*\\*\\*\\*\\*\\*\\*\\*\\* -k 1234" + System.lineSeparator() + //
+                "read \"positions.rsl\"" + System.lineSeparator() + //
+                "runfile \"positions\" -f csv -o \"C:/users/me/my report file.csv\"" + System.lineSeparator() + //
+                "exit" + System.lineSeparator() + //
+                "EOF\n";
+
+        final GenevaTestRunner gvaTestRunner = new GenevaTestRunner.Builder().withHostname(HOSTNAME).withUsername("foo")
+                .withPassword("bar").withRunrepUsername("fez").withRunrepPassword("faz").withGenevaAga(1234)
+                .withRSLName("positions").withReportOutputPath("C:/users/me/my report file.csv")
+                .withExpectedCommandPattern(commandPattern).build();
+
+        gvaTestRunner.execute(this);
+        gvaTestRunner.assertPass();
+
+        // verify that we called with the correct cmd
+        Mockito.verify(mockSession).exec(argThat(new ArgumentMatcher<String>() {
+            @Override
+            public boolean matches(String argument) {
+                return argument.matches("runrep -f empty.lst -b << EOF" + System.lineSeparator() + //
+                        "connect fez/faz -k 1234" + System.lineSeparator() + //
+                        "read \"positions.rsl\"" + System.lineSeparator() + //
+                        "runfile \"positions\" -f csv -o \"C:/users/me/my report file.csv\"" + System.lineSeparator() + //
+                        "exit" + System.lineSeparator() + //
+                        "EOF\n");
             }
         }));
     }

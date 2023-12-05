@@ -56,10 +56,10 @@ public class ExecuteGenevaRSL extends BaseExecuteGeneva {
         final String reportParameters = getReportParameters(context, flowfile);
 
         if (StringUtils.isNotBlank(reportParameters)) {
-            return String.format("read %s.rsl%nrunfile %s -f csv -o \"%s\" %s", rslName, rslName, outputFilename,
-                    reportParameters);
+            return String.format("read \"%s.rsl\"%nrunfile \"%s\" -f csv -o \"%s\" %s", rslName, rslName,
+                    outputFilename, reportParameters);
         } else {
-            return String.format("read %s.rsl%nrunfile %s -f csv -o \"%s\"", rslName, rslName, outputFilename);
+            return String.format("read \"%s.rsl\"%nrunfile \"%s\" -f csv -o \"%s\"", rslName, rslName, outputFilename);
         }
     }
 }

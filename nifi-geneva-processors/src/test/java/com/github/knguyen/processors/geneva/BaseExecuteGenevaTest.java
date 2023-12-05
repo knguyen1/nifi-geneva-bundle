@@ -48,7 +48,8 @@ abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
             String sftpTransferConnectionTimeout, String reportOutputDirectory, String runrepUsername,
             String runrepPassword, Integer genevaAga, String accountingRunType, String portfolioList,
             LocalDateTime periodStartDate, LocalDateTime periodEndDate, LocalDateTime knowledgeDate,
-            LocalDateTime priorKnowledgeDate, String reportConsolidation, String extraFlags, String rslName) {
+            LocalDateTime priorKnowledgeDate, String reportConsolidation, String extraFlags, String rslName,
+            String reportOutputPath) {
         if (StringUtils.isNotBlank(rslName))
             testRunner.setProperty("rsl-name", rslName);
 
@@ -139,6 +140,10 @@ abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
             testRunner.setProperty(BaseExecuteGeneva.EXTRA_FLAGS, extraFlags);
         }
 
+        if (StringUtils.isNotBlank(reportOutputPath)) {
+            testRunner.setProperty(BaseExecuteGeneva.REPORT_OUTPUT_PATH, reportOutputPath);
+        }
+
         argumentsHaveBeenSet = true;
     }
 
@@ -149,12 +154,14 @@ abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
             String runrepPassword, Integer genevaAga, String accountingRunType, String portfolioList,
             LocalDateTime periodStartDate, LocalDateTime periodEndDate, LocalDateTime knowledgeDate,
             LocalDateTime priorKnowledgeDate, String reportConsolidation, String extraFlags, String rslName,
-            Map<String, String> expectedAttributes, String expectedContent, String expectedCommandPattern) {
+            Map<String, String> expectedAttributes, String expectedContent, String expectedCommandPattern,
+            String reportOutputPath) {
         if (!argumentsHaveBeenSet)
             setArguments(hostname, port, sshAuthenticationStrategy, username, password, privateKeyPath,
                     privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory,
                     runrepUsername, runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate,
-                    periodEndDate, knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName);
+                    periodEndDate, knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName,
+                    reportOutputPath);
 
         // queue up and run
         testRunner.enqueue("test");
@@ -184,7 +191,8 @@ abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
             final Pattern pattern = Pattern.compile(expectedCommandPattern, Pattern.MULTILINE);
             final String genevaRunrepCommandAttribute = successFlowFile.getAttribute("geneva.runrep.command");
             final Matcher matcher = pattern.matcher(genevaRunrepCommandAttribute);
-            assertTrue(matcher.matches());
+            assertTrue(matcher.matches(), String.format("Expected the command to be %s but was %s",
+                    expectedCommandPattern, genevaRunrepCommandAttribute));
         }
 
         testRunner.assertTransferCount(BaseExecuteGeneva.REL_SUCCESS, 1);
@@ -201,12 +209,14 @@ abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
             String runrepPassword, Integer genevaAga, String accountingRunType, String portfolioList,
             LocalDateTime periodStartDate, LocalDateTime periodEndDate, LocalDateTime knowledgeDate,
             LocalDateTime priorKnowledgeDate, String reportConsolidation, String extraFlags, String rslName,
-            Map<String, String> expectedAttributes, String expectedContent, String expectedCommandPattern) {
+            Map<String, String> expectedAttributes, String expectedContent, String expectedCommandPattern,
+            String reportOutputPath) {
         if (!argumentsHaveBeenSet)
             setArguments(hostname, port, sshAuthenticationStrategy, username, password, privateKeyPath,
                     privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory,
                     runrepUsername, runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate,
-                    periodEndDate, knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName);
+                    periodEndDate, knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName,
+                    reportOutputPath);
 
         testRunner.assertValid();
     }
@@ -218,12 +228,14 @@ abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
             String runrepPassword, Integer genevaAga, String accountingRunType, String portfolioList,
             LocalDateTime periodStartDate, LocalDateTime periodEndDate, LocalDateTime knowledgeDate,
             LocalDateTime priorKnowledgeDate, String reportConsolidation, String extraFlags, String rslName,
-            Map<String, String> expectedAttributes, String expectedContent, String expectedCommandPattern) {
+            Map<String, String> expectedAttributes, String expectedContent, String expectedCommandPattern,
+            String reportOutputPath) {
         if (!argumentsHaveBeenSet)
             setArguments(hostname, port, sshAuthenticationStrategy, username, password, privateKeyPath,
                     privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory,
                     runrepUsername, runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate,
-                    periodEndDate, knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName);
+                    periodEndDate, knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName,
+                    reportOutputPath);
 
         testRunner.assertNotValid();
     }

@@ -26,7 +26,8 @@ public interface IExecuteGenevaTest {
             String runrepPassword, Integer genevaAga, String accountingRunType, String portfolioList,
             LocalDateTime periodStartDate, LocalDateTime periodEndDate, LocalDateTime knowledgeDate,
             LocalDateTime priorKnowledgeDate, String reportConsolidation, String extraFlags, String rslName,
-            Map<String, String> expectedAttributes, String expectedContent, String expectedCommandPattern);
+            Map<String, String> expectedAttributes, String expectedContent, String expectedCommandPattern,
+            String reportOutputPath);
 
     void assertValid(String hostname, Integer port, String sshAuthenticationStrategy, String username, String password,
             String privateKeyPath, String privateKeyPassphrase, String dataTimeout,
@@ -34,7 +35,8 @@ public interface IExecuteGenevaTest {
             String runrepPassword, Integer genevaAga, String accountingRunType, String portfolioList,
             LocalDateTime periodStartDate, LocalDateTime periodEndDate, LocalDateTime knowledgeDate,
             LocalDateTime priorKnowledgeDate, String reportConsolidation, String extraFlags, String rslName,
-            Map<String, String> expectedAttributes, String expectedContent, String expectedCommandPattern);
+            Map<String, String> expectedAttributes, String expectedContent, String expectedCommandPattern,
+            String reportOutputPath);
 
     void assertNotValid(String hostname, Integer port, String sshAuthenticationStrategy, String username,
             String password, String privateKeyPath, String privateKeyPassphrase, String dataTimeout,
@@ -42,5 +44,6 @@ public interface IExecuteGenevaTest {
             String runrepPassword, Integer genevaAga, String accountingRunType, String portfolioList,
             LocalDateTime periodStartDate, LocalDateTime periodEndDate, LocalDateTime knowledgeDate,
             LocalDateTime priorKnowledgeDate, String reportConsolidation, String extraFlags, String rslName,
-            Map<String, String> expectedAttributes, String expectedContent, String expectedCommandPattern);
+            Map<String, String> expectedAttributes, String expectedContent, String expectedCommandPattern,
+            String reportOutputPath);
 }

@@ -339,6 +339,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         final StopWatch stopWatch = new StopWatch(true);
         final String host = context.getProperty(HOSTNAME).evaluateAttributeExpressions(flowFile).getValue();
         final int port = context.getProperty(PORT).evaluateAttributeExpressions(flowFile).asInteger();
+        final String sshUsername = context.getProperty(USERNAME).evaluateAttributeExpressions(flowFile).getValue();
 
         // Geneva runrep-specific information
         final String genevaAga = context.getProperty(GENEVA_AGA).evaluateAttributeExpressions(flowFile).getValue();
@@ -355,6 +356,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             final String protocolName = commandExecutor.getProtocolName();
 
             attributes.put(protocolName + ".remote.host", host);
+            attributes.put(protocolName + ".remote.username", sshUsername);
             attributes.put(protocolName + ".remote.port", String.valueOf(port));
             attributes.put(protocolName + ".remote.filename", resultCsvFile);
             attributes.put("geneva.runrep.aga", genevaAga);

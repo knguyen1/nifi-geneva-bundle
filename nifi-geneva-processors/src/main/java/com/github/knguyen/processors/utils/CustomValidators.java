@@ -23,7 +23,6 @@ import java.util.regex.Pattern;
 import org.apache.nifi.components.ValidationContext;
 import org.apache.nifi.components.ValidationResult;
 import org.apache.nifi.components.Validator;
-import org.apache.nifi.processor.util.StandardValidators;
 
 public class CustomValidators {
     private static boolean isValidHostname(String hostname) {
@@ -183,5 +182,13 @@ public class CustomValidators {
             return new ValidationResult.Builder().subject(subject).input(value).explanation(reason)
                     .valid(reason == null).build();
         }
+    }
+
+    /**
+     * Private constructor to prevent instantiation of this utility class.
+     *
+     * This utility class is not meant to be instantiated. It provides utility methods for String.
+     */
+    private CustomValidators() {
     }
 }

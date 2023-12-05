@@ -50,6 +50,7 @@ public class GenevaTestRunner {
     private String privateKeyPassphrase;
     private String dataTimeout;
     private String sftpTransferConnectionTimeout;
+    private String reportOutputPath;
     private String reportOutputDirectory;
     private String runrepUsername;
     private String runrepPassword;
@@ -74,18 +75,19 @@ public class GenevaTestRunner {
     private Boolean testSucceed = false;
 
     public static class Builder {
-        private String hostname;
+        private String hostname = BaseExecuteGenevaTest.HOSTNAME;
         private Integer port = 22;
         private String sshAuthenticationStrategy;
-        private String username;
-        private String password;
+        private String username = BaseExecuteGenevaTest.USERNAME;
+        private String password = BaseExecuteGenevaTest.PASSWORD;
         private String privateKeyPath;
         private String privateKeyPassphrase;
         private String dataTimeout;
         private String sftpTransferConnectionTimeout;
+        private String reportOutputPath;
         private String reportOutputDirectory;
-        private String runrepUsername;
-        private String runrepPassword;
+        private String runrepUsername = BaseExecuteGenevaTest.RUNREP_USERNAME;
+        private String runrepPassword = BaseExecuteGenevaTest.RUNREP_PASSWORD;
         private Integer genevaAga;
         private String accountingRunType;
         private String portfolioList;
@@ -106,6 +108,11 @@ public class GenevaTestRunner {
 
         public Builder withExpectedAttributes(Map<String, String> expectedAttributes) {
             this.expectedAttributes = expectedAttributes;
+            return this;
+        }
+
+        public Builder withReportOutputPath(String reportOutputPath) {
+            this.reportOutputPath = reportOutputPath;
             return this;
         }
 
@@ -260,6 +267,7 @@ public class GenevaTestRunner {
         this.expectedAttributes = builder.expectedAttributes;
         this.expectedContent = builder.expectedContent;
         this.expectedCommandPattern = builder.expectedCommandPattern;
+        this.reportOutputPath = builder.reportOutputPath;
     }
 
     public GenevaTestRunner execute(IExecuteGenevaTest testRunner) {
@@ -267,7 +275,7 @@ public class GenevaTestRunner {
                 privateKeyPath, privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory,
                 runrepUsername, runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate,
                 periodEndDate, knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName,
-                expectedAttributes, expectedContent, expectedCommandPattern);
+                expectedAttributes, expectedContent, expectedCommandPattern, reportOutputPath);
 
         return this;
     }
@@ -277,7 +285,7 @@ public class GenevaTestRunner {
                 privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory, runrepUsername,
                 runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate, periodEndDate,
                 knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName, expectedAttributes,
-                expectedContent, expectedCommandPattern);
+                expectedContent, expectedCommandPattern, reportOutputPath);
         return this;
     }
 
@@ -286,7 +294,7 @@ public class GenevaTestRunner {
                 privateKeyPassphrase, dataTimeout, sftpTransferConnectionTimeout, reportOutputDirectory, runrepUsername,
                 runrepPassword, genevaAga, accountingRunType, portfolioList, periodStartDate, periodEndDate,
                 knowledgeDate, priorKnowledgeDate, reportConsolidation, extraFlags, rslName, expectedAttributes,
-                expectedContent, expectedCommandPattern);
+                expectedContent, expectedCommandPattern, reportOutputPath);
         return this;
     }
 
