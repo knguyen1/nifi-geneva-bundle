@@ -21,6 +21,8 @@ import java.time.LocalDate;
 import org.apache.nifi.util.TestRunners;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.github.knguyen.processors.geneva.runners.GenevaTestRunner;
 
@@ -39,6 +41,17 @@ class ExecuteGenevaArgsValidationTest extends BaseExecuteGenevaTest {
         gvaTestRunner.assertValid(this);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = { "periodstartdate", "periodenddate", "knowledgedate" })
+    void testInvalidDates(final String propertyName) {
+        final GenevaTestRunner gvaTestRunner = new GenevaTestRunner.Builder().withHostname(HOSTNAME)
+                .withUsername(USERNAME).withPassword(PASSWORD).withRunrepUsername(RUNREP_USERNAME)
+                .withRunrepPassword(RUNREP_PASSWORD).withGenevaAga(9999).withRSLName("netassets").build();
+
+        testRunner.setProperty(propertyName, "not a valid date");
+        gvaTestRunner.assertNotValid(this);
+    }
+
     @Test
     void testSpaceInPortfolioMustBeEscaped1() {
         final GenevaTestRunner gvaTestRunner = new GenevaTestRunner.Builder().withHostname(HOSTNAME)
@@ -49,19 +62,21 @@ class ExecuteGenevaArgsValidationTest extends BaseExecuteGenevaTest {
         gvaTestRunner.assertValid(this);
     }
 
-    @Test
-    void testSpaceInPortfolioMustBeEscaped2() {
+    @ParameterizedTest
+    @ValueSource(strings = { "123,Space In Portfolio,456", "invalid portfolio", "portfolio with spaces", "portfolio_with_unescaped_ spaces" })
+    void testSpaceInPortfolioMustBeEscaped2(String invalidPortfolioList) {
         final GenevaTestRunner gvaTestRunner = new GenevaTestRunner.Builder().withHostname(HOSTNAME)
                 .withUsername(USERNAME).withPassword(PASSWORD).withRunrepUsername(RUNREP_USERNAME)
                 .withRunrepPassword(RUNREP_PASSWORD).withGenevaAga(9999).withRSLName("netassets")
-                .withPortfolioList("123,Space In Portfolio,456").build();
+                .withPortfolioList(invalidPortfolioList).build();
 
         gvaTestRunner.assertNotValid(this);
     }
 
-    @Test
-    void testInvalidHostname() {
-        final GenevaTestRunner gvaTestRunner = new GenevaTestRunner.Builder().withHostname("foo&bar")
+    @ParameterizedTest
+    @ValueSource(strings = { "foo&bar", "invalid hostname", "host name with spaces", "hostname_with_&_invalid_character" })
+    void testInvalidHostname(String invalidHostname) {
+        final GenevaTestRunner gvaTestRunner = new GenevaTestRunner.Builder().withHostname(invalidHostname)
                 .withRunrepUsername(RUNREP_USERNAME).withRunrepPassword(RUNREP_PASSWORD).withRSLName("netassets")
                 .build();
 

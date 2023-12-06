@@ -43,38 +43,19 @@ public class CustomValidators {
      *
      * @see Validator
      */
-    public static final Validator HOSTNAME_VALIDATOR = new Validator() {
-        /**
-         * Validates a provided hostname string in a particular validation context, with support for Expression
-         * Language. If the hostname string is valid, it returns a ValidationResult with valid set to true. If the
-         * hostname string is invalid, it returns a ValidationResult with valid set to false. If the input contains
-         * Expression Language, it is evaluated before validation.
-         *
-         * @param subject
-         *            The subject of validation, usually the name or type of the data being validated.
-         * @param input
-         *            The hostname string to validate. This can be a plain string or an Expression Language statement.
-         * @param context
-         *            The context of validation, providing additional information needed for validation.
-         *
-         * @return A ValidationResult that includes the subject, input, validation result (valid/invalid), and an
-         *         explanation.
-         */
-        @Override
-        public ValidationResult validate(String subject, String input, ValidationContext context) {
-            // Evaluate Expression Language if present
-            final String evaluatedInput;
-            if (context.isExpressionLanguageSupported(subject) && context.isExpressionLanguagePresent(input)) {
-                evaluatedInput = context.newPropertyValue(input).evaluateAttributeExpressions().getValue();
-            } else {
-                evaluatedInput = input;
-            }
-
-            // Validate the (possibly evaluated) input
-            final boolean isValid = isValidHostname(evaluatedInput);
-            return new ValidationResult.Builder().subject(subject).input(evaluatedInput).valid(isValid)
-                    .explanation(isValid ? "Valid hostname" : "Invalid hostname").build();
+    public static final Validator HOSTNAME_VALIDATOR = (subject, input, context) -> {
+        // Evaluate Expression Language if present
+        final String evaluatedInput;
+        if (context.isExpressionLanguageSupported(subject) && context.isExpressionLanguagePresent(input)) {
+            evaluatedInput = context.newPropertyValue(input).evaluateAttributeExpressions().getValue();
+        } else {
+            evaluatedInput = input;
         }
+
+        // Validate the (possibly evaluated) input
+        final boolean isValid = isValidHostname(evaluatedInput);
+        return new ValidationResult.Builder().subject(subject).input(evaluatedInput).valid(isValid)
+                .explanation(isValid ? "Valid hostname" : "Invalid hostname").build();
     };
 
     /**
