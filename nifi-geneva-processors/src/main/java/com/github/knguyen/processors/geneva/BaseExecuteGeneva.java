@@ -366,7 +366,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             commandExecutor.execute(command, flowFile, session);
 
             // The result csv file on the server
-            flowFile = commandExecutor.getRemoteFile(command, flowFile, session, getStreamHandler());
+            flowFile = commandExecutor.getRemoteFile(context, command, flowFile, session, getStreamHandler());
 
             final long elapsedMs = stopWatch.getElapsed(TimeUnit.MILLISECONDS);
             flowFile = session.putAttribute(flowFile, "geneva.runrep.elapsedms", String.valueOf(elapsedMs));

@@ -21,8 +21,9 @@ import java.io.InputStream;
 
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessSession;
+import org.apache.nifi.processor.ProcessContext;
 
 public interface IStreamHandler {
-    FlowFile handleStream(final FlowFile originalFlowFile, final ProcessSession processSession,
-            final InputStream inputStream) throws IOException;
+    FlowFile handleStream(final ProcessContext context, final FlowFile originalFlowFile,
+            final ProcessSession processSession, final InputStream inputStream) throws IOException;
 }

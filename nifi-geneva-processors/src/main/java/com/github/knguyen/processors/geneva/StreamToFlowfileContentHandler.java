@@ -21,12 +21,13 @@ import java.io.InputStream;
 
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessSession;
+import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.stream.io.StreamUtils;
 
 public class StreamToFlowfileContentHandler implements IStreamHandler {
     @Override
-    public FlowFile handleStream(final FlowFile originalFlowFile, final ProcessSession processSession,
-            final InputStream inputStream) throws IOException {
+    public FlowFile handleStream(final ProcessContext context, final FlowFile originalFlowFile,
+            final ProcessSession processSession, final InputStream inputStream) throws IOException {
         if (inputStream != null && inputStream.available() > 0)
             return processSession.write(originalFlowFile, out -> StreamUtils.copy(inputStream, out));
 

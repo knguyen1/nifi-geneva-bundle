@@ -22,6 +22,7 @@ import java.io.InputStream;
 
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessSession;
+import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processors.standard.ssh.SSHClientProvider;
 
 import net.schmizz.sshj.sftp.RemoteFile;
@@ -38,8 +39,8 @@ public interface RemoteCommandExecutor extends Closeable {
     void execute(final ICommand command, final FlowFile originalFlowFile, final ProcessSession processSession)
             throws IOException, GenevaException;
 
-    FlowFile getRemoteFile(final ICommand command, final FlowFile originalFlowFile, final ProcessSession processSession,
-            IStreamHandler streamHandler) throws IOException;
+    FlowFile getRemoteFile(final ProcessContext context, final ICommand command, final FlowFile originalFlowFile,
+            final ProcessSession processSession, IStreamHandler streamHandler) throws IOException;
 
     InputStream getStreamFromRemoteFile(final RemoteFile remoteFile) throws IOException;
 

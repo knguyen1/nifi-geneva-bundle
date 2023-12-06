@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.nifi.context.PropertyContext;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.logging.ComponentLog;
+import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processors.standard.ssh.SSHClientProvider;
 import org.apache.nifi.processors.standard.ssh.StandardSSHClientProvider;
@@ -182,7 +183,7 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
     }
 
     @Override
-    public FlowFile getRemoteFile(final ICommand command, final FlowFile originalFlowFile,
+    public FlowFile getRemoteFile(final ProcessContext context, final ICommand command, final FlowFile originalFlowFile,
             final ProcessSession processSession, IStreamHandler streamHandler) throws IOException {
         final SSHClient client = ensureSSHClientConnected(originalFlowFile);
 
@@ -190,7 +191,7 @@ public class SSHCommandExecutor implements RemoteCommandExecutor {
         try (final SFTPClient sftpClient = client.newSFTPClient()) {
             try (final RemoteFile remoteFile = sftpClient.open(resource)) {
                 final InputStream in = getStreamFromRemoteFile(remoteFile);
-                return streamHandler.handleStream(originalFlowFile, processSession, in);
+                return streamHandler.handleStream(context, originalFlowFile, processSession, in);
             }
         }
     }
