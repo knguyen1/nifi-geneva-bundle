@@ -102,9 +102,9 @@ public abstract class RunrepCommand implements ICommand {
         final String genevaAga = argumentProvider.getGenevaAga();
 
         final String command = String.format("connect %s/%s -k %s", genevaUser, genevaPassword, genevaAga);
-        final String obfuscatedCommand = String.format("connect %s/%s -k %s", genevaUser, "*********", genevaAga);
+        final String obsCommand = String.format("connect %s/%s -k %s", genevaUser, "*********", genevaAga);
 
-        return Pair.of(command, obfuscatedCommand);
+        return Pair.of(command, obsCommand);
     }
 
     protected abstract String getReportCommand();

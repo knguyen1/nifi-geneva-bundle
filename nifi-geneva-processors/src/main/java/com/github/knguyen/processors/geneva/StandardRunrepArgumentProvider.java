@@ -438,14 +438,13 @@ public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
 
         // Check that if `ClosedPeriod` accounting is selected, `priorKnowledgeDate` must be provided
         final String accountingRunType = getAccountingRunType();
-        if (!StringUtils.isNotBlank(accountingRunType)) {
-            if (BaseExecuteGeneva.CLOSED_PERIOD_ACCOUNTING.getValue().equals(accountingRunType)) {
-                if (priorKnowledgeDate == null) {
-                    throw new IllegalArgumentException(
-                            String.format("`%s` accounting was selected, `priorKnowledgeDate` cannot be null.",
-                                    BaseExecuteGeneva.CLOSED_PERIOD_ACCOUNTING.getDisplayName()));
-                }
-            }
+        if (!StringUtils.isNotBlank(accountingRunType)
+                && (BaseExecuteGeneva.CLOSED_PERIOD_ACCOUNTING.getValue().equals(accountingRunType))
+                && (priorKnowledgeDate == null)) {
+            throw new IllegalArgumentException(
+                    String.format("`%s` accounting was selected, `priorKnowledgeDate` cannot be null.",
+                            BaseExecuteGeneva.CLOSED_PERIOD_ACCOUNTING.getDisplayName()));
+
         }
     }
 

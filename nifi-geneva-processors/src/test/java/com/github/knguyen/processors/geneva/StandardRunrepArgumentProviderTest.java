@@ -51,7 +51,8 @@ class StandardRunrepArgumentProviderTest {
         mockPropertyWithGivenValue(BaseExecuteGeneva.RUNREP_USERNAME, "user");
         mockPropertyWithGivenValue(BaseExecuteGeneva.RUNREP_PASSWORD, "password");
         mockPropertyWithGivenValue(BaseExecuteGeneva.PORTFOLIO_LIST, "123,\\\"My Portfolio\\\",456");
-        mockPropertyWithGivenValue(BaseExecuteGeneva.ACCOUNTING_RUN_TYPE, BaseExecuteGeneva.CLOSED_PERIOD_ACCOUNTING.getValue());
+        mockPropertyWithGivenValue(BaseExecuteGeneva.ACCOUNTING_RUN_TYPE,
+                BaseExecuteGeneva.CLOSED_PERIOD_ACCOUNTING.getValue());
         mockPropertyWithGivenValue(BaseExecuteGeneva.PERIOD_START_DATE, "2023-01-01T00:00:00");
         mockPropertyWithGivenValue(BaseExecuteGeneva.PERIOD_END_DATE, "2023-01-31T23:59:59");
         mockPropertyWithGivenValue(BaseExecuteGeneva.KNOWLEDGE_DATE, "2023-02-28T23:59:59");
@@ -111,7 +112,8 @@ class StandardRunrepArgumentProviderTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "123,My Portfolio,456", "123,\\\"My Portfolio,456", "123,My Portfolio\\\",456", "\\\"123,My Portfolio,456\\\"" })
+    @ValueSource(strings = { "123,My Portfolio,456", "123,\\\"My Portfolio,456", "123,My Portfolio\\\",456",
+            "\\\"123,My Portfolio,456\\\"" })
     void testValidateFailsInvalidMultiplePortfolios(String portfolioList) {
         // Mocking a valid portfolio list
         final var propertyValue1 = Mockito.mock(PropertyValue.class);
