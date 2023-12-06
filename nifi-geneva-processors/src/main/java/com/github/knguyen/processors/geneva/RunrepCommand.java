@@ -32,7 +32,7 @@ public abstract class RunrepCommand implements ICommand {
     protected String outputResource;
     protected String obfuscatedCommand;
 
-    public RunrepCommand(final IRunrepArgumentProvider argumentProvider) {
+    protected RunrepCommand(final IRunrepArgumentProvider argumentProvider) {
         this.argumentProvider = argumentProvider;
         init();
     }
