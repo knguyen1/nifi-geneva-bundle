@@ -327,7 +327,17 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
 
     protected abstract List<PropertyDescriptor> additionalDescriptors();
 
-    protected abstract IStreamHandler getStreamHandler();
+    /**
+     * Retrieves an instance of a {@code IStreamHandler} to handle streams. The default implementation returns a
+     * {@code StreamToFlowfileContentHandler} which simply copies the stream directly to the flowfile.
+     *
+     * Subclasses are encouraged to override this method to provide custom stream handling logic as needed.
+     *
+     * @return A {@code IStreamHandler} instance to handle streams.
+     */
+    public IStreamHandler getStreamHandler() {
+        return new StreamToFlowfileContentHandler();
+    }
 
     protected abstract ICommand getCommand(final ProcessSession session, final ProcessContext context,
             final FlowFile flowfile) throws IllegalArgumentException;

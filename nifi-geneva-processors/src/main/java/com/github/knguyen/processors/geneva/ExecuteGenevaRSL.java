@@ -40,11 +40,6 @@ public class ExecuteGenevaRSL extends BaseExecuteGeneva {
     }
 
     @Override
-    public IStreamHandler getStreamHandler() {
-        return new StreamToFlowfileContentHandler();
-    }
-
-    @Override
     protected ICommand getCommand(final ProcessSession session, final ProcessContext context, final FlowFile flowfile)
             throws IllegalArgumentException {
         var provider = new StandardRunrepArgumentProvider(session, context, flowfile);

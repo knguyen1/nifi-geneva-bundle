@@ -67,7 +67,8 @@ class GSQLCommandTest {
 
         assertEquals("runrep -f empty.lst -b << EOF\n" + //
                 "connect usr/pw -k 9999\n" + //
-                "rungsql -f xml -o \"/usr/advent/geneva-20.0.0/share/rslspecs/my-report.xml\" --Portfolio 123-MyPortfolio --PeriodStartDate 2023-01-01T00:00:00 --PeriodEndDate 2023-01-31T00:00:00 --KnowledgeDate 2023-02-01T23:59:59 --PriorKnowledgeDate 2022-12-01T12:34:56\n" + //
+                "rungsql -f xml -o \"/usr/advent/geneva-20.0.0/share/rslspecs/my-report.xml\" --Portfolio 123-MyPortfolio --PeriodStartDate 2023-01-01T00:00:00 --PeriodEndDate 2023-01-31T00:00:00 --KnowledgeDate 2023-02-01T23:59:59 --PriorKnowledgeDate 2022-12-01T12:34:56\n"
+                + //
                 "SELECT\n" + //
                 "{ AmortizationPrice(Local,PeriodEnd,\"2013/08/09\") }\n" + //
                 "FROM bisLocalPosition GIVEN Portfolio = :Portfolio,PeriodStartDate = :PeriodStartDate\n" + //
