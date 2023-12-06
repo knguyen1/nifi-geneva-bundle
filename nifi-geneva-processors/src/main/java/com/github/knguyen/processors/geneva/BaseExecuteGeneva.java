@@ -33,7 +33,6 @@ import org.apache.nifi.logging.ComponentLog;
 import org.apache.nifi.processors.standard.util.FTPTransfer;
 import org.apache.nifi.processors.standard.util.FileTransfer;
 import org.apache.nifi.processors.standard.util.SFTPTransfer;
-import org.apache.commons.lang3.tuple.Pair;
 
 import com.github.knguyen.processors.ssh.SSHCommandExecutorProvider;
 import com.github.knguyen.processors.utils.CustomValidators;
@@ -47,12 +46,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.nifi.util.StopWatch;
-import org.apache.nifi.util.StringUtils;
 
 import java.util.concurrent.TimeUnit;
 

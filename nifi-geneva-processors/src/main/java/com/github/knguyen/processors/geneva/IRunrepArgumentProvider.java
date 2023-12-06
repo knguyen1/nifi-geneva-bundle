@@ -25,15 +25,26 @@ package com.github.knguyen.processors.geneva;
  * flexible and testable code. Implementations can vary from direct retrievals from a ProcessContext and FlowFile to
  * more complex scenarios involving additional data sources or configurations.
  *
- * Methods: - getGenevaUser: Retrieves the Geneva username. - getGenevaPassword: Retrieves the Geneva password. -
- * getGenevaAga: Retrieves the Geneva AGA (Application Gateway Architecture) value. - getOutputFilename: Determines the
- * output file name for the report. - getPortfolioList: Retrieves the portfolio list for the report. -
- * getPeriodStartDate: Retrieves the start date for the report period. - getPeriodEndDate: Retrieves the end date for
- * the report period. - getKnowledgeDate: Retrieves the knowledge date for the report. - getPriorKnowledgeDate:
- * Retrieves the prior knowledge date for the report. - getAccountingRunType: Retrieves the accounting run type for the
- * report. - getReportConsolidation: Retrieves the report consolidation setting. - getExtraFlags: Retrieves any extra
- * flags or parameters for the report command. - getRSLName: Retrieves the RSL name.
+ * <p>
+ * Methods:
+ * <ul>
+ * <li>getGenevaUser: Retrieves the Geneva username.</li>
+ * <li>getGenevaPassword: Retrieves the Geneva password.</li>
+ * <li>getGenevaAga: Retrieves the Geneva AGA (Application Gateway Architecture) value.</li>
+ * <li>getOutputFilename: Determines the output file name for the report.</li>
+ * <li>getPortfolioList: Retrieves the portfolio list for the report.</li>
+ * <li>getPeriodStartDate: Retrieves the start date for the report period.</li>
+ * <li>getPeriodEndDate: Retrieves the end date for the report period.</li>
+ * <li>getKnowledgeDate: Retrieves the knowledge date for the report.</li>
+ * <li>getPriorKnowledgeDate: Retrieves the prior knowledge date for the report.</li>
+ * <li>getAccountingRunType: Retrieves the accounting run type for the report.</li>
+ * <li>getReportConsolidation: Retrieves the report consolidation setting.</li>
+ * <li>getExtraFlags: Retrieves any extra flags or parameters for the report command.</li>
+ * <li>getRSLName: Retrieves the RSL name.</li>
+ * <li>validate: Validates logical consistencies of provided arguments.</li>
+ * </ul>
  */
+
 public interface IRunrepArgumentProvider {
     String getGenevaUser();
 
@@ -64,4 +75,22 @@ public interface IRunrepArgumentProvider {
     String getExtraFlags();
 
     String getRSLName();
+
+    /**
+     * Validates the provided arguments for the Runrep command.
+     *
+     * This method is responsible for ensuring that all the necessary arguments required to construct and execute a
+     * Runrep command are valid and meet the expected criteria. This could include checks like non-nullity, adherence to
+     * specific formats, or meeting certain value constraints.
+     *
+     * Implementations of this method should throw a specific exception or provide a detailed error message if any of
+     * the arguments do not meet the validation criteria. This ensures that any issues with the arguments can be
+     * identified and addressed early in the process, prior to attempting to execute the Runrep command.
+     *
+     * @throws IllegalArgumentException
+     *             If any of the arguments do not meet the validation criteria.
+     * @throws NullPointerException
+     *             If any of the required arguments are null.
+     */
+    void validate() throws IllegalArgumentException, NullPointerException;
 }
