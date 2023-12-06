@@ -155,7 +155,7 @@ public abstract class RunrepCommand implements ICommand {
      *
      * @return A formatted string of the parameter name and its value, or null if the value is blank.
      */
-    private String formatParameter(final String paramName, final String paramValue) {
+    protected String formatParameter(final String paramName, final String paramValue) {
         return org.apache.nifi.util.StringUtils.isNotBlank(paramValue) ? String.format("%s %s", paramName, paramValue)
                 : null;
     }
@@ -168,7 +168,7 @@ public abstract class RunrepCommand implements ICommand {
      *
      * @return The trimmed string of extra flags, or null if the extra flags property value is blank.
      */
-    private String formatExtraFlags() {
+    protected String formatExtraFlags() {
         final String extraFlags = argumentProvider.getExtraFlags();
         return org.apache.nifi.util.StringUtils.isNotBlank(extraFlags) ? extraFlags.trim() : null;
     }
@@ -183,7 +183,7 @@ public abstract class RunrepCommand implements ICommand {
      * @return The string of the report consolidation property value, or null if the value is 'NONE_CONSOLIDATED', null,
      *         or blank.
      */
-    private String formatReportConsolidation() {
+    protected String formatReportConsolidation() {
         String consolidationValue = argumentProvider.getReportConsolidation();
 
         // Check if the value is not NONE_CONSOLIDATED and not null/blank
@@ -202,7 +202,7 @@ public abstract class RunrepCommand implements ICommand {
      *
      * @return The parameter string or null if the condition is not met.
      */
-    private String formatAccountingRunType() {
+    protected String formatAccountingRunType() {
         final String accountingRunType = argumentProvider.getAccountingRunType();
 
         // Check if the accounting run type is not dynamic and not blank
