@@ -166,7 +166,7 @@ public abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
                     reportOutputPath);
 
         // queue up and run
-        testRunner.enqueue("test;");
+        testRunner.enqueue("test");
         testRunner.run();
 
         final MockFlowFile successFlowFile = testRunner.getFlowFilesForRelationship(BaseExecuteGeneva.REL_SUCCESS)

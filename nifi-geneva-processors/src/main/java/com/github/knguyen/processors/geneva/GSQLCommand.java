@@ -25,7 +25,21 @@ public class GSQLCommand extends RunrepCommand {
 
     @Override
     protected String getReportCommand() {
-        // TODO: implement me
-        return StringUtils.EMPTY;
+        // get the output format
+        final String outputFormat = argumentProvider.getOutputFormat();
+
+        // get the output filename
+        final String outputFilename = getOuputFilename();
+        final String reportParameters = getReportParameters();
+
+        // get the gsql query
+        final String gsqlQuery = argumentProvider.getGSQLQuery();
+
+        if (StringUtils.isNotBlank(reportParameters)) {
+            return String.format("rungsql -f %s -o \"%s\" %s%n%s", outputFormat, outputFilename, reportParameters,
+                    gsqlQuery);
+        } else {
+            return String.format("rungsql -f %s -o \"%s\"%n%s", outputFormat, outputFilename, gsqlQuery);
+        }
     }
 }

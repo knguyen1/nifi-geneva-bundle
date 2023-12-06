@@ -458,7 +458,7 @@ public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
         // first, attempt to get it from the property, if provided
         try {
             sqlQuery = context.getProperty(ExecuteGenevaGSQL.GENEVA_SQL_QUERY).evaluateAttributeExpressions(flowfile)
-                .getValue();
+                    .getValue();
 
             if (StringUtils.isNotBlank(sqlQuery))
                 return sqlQuery;
@@ -485,7 +485,8 @@ public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
 
     protected void validateGSQLQuery() {
         final String gsqlQuery = getGSQLQuery();
-        if (StringUtils.isNotBlank(gsqlQuery) && !gsqlQuery.trim().endsWith(";")) {
+        if (StringUtils.isNotBlank(gsqlQuery) && gsqlQuery.trim().toLowerCase().startsWith("select")
+                && !gsqlQuery.trim().endsWith(";")) {
             throw new IllegalArgumentException("`GSQLQuery` must end with a semicolon (;)");
         }
     }

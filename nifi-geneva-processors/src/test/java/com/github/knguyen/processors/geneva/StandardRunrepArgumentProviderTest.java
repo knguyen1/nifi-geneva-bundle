@@ -64,7 +64,6 @@ class StandardRunrepArgumentProviderTest {
         mockPropertyWithGivenValue(BaseExecuteGeneva.KNOWLEDGE_DATE, "2023-02-28T23:59:59");
         mockPropertyWithGivenValue(BaseExecuteGeneva.PRIOR_KNOWLEDGE_DATE, "2022-12-01T00:00:00");
         mockPropertyWithGivenValue(BaseExecuteGeneva.REPORT_OUTPUT_FORMAT, "csv");
-        mockPropertyWithGivenValue(ExecuteGenevaGSQL.GENEVA_SQL_QUERY, "test;");
     }
 
     private void mockPropertyWithGivenValue(PropertyDescriptor propertyDescriptor, String value) {

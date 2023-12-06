@@ -29,18 +29,16 @@ import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
 public class ExecuteGenevaGSQL extends BaseExecuteGeneva {
-    static final PropertyDescriptor GENEVA_SQL_QUERY = new PropertyDescriptor.Builder()
-            .name("geneva-sql-query")
+    static final PropertyDescriptor GENEVA_SQL_QUERY = new PropertyDescriptor.Builder().name("geneva-sql-query")
             .displayName("Geneva SQL Query")
-            .description("The SQL select query to execute. The query can be empty, a constant value, or built from attributes "
-                    + "using Expression Language. If this property is specified, it will be used regardless of the content of "
-                    + "incoming flowfiles. If this property is empty, the content of the incoming flow file is expected "
-                    + "to contain a valid SQL select query, to be issued by the processor to the database. Note that Expression "
-                    + "Language is not evaluated for flow file contents. The query, regardless if specified in this property or the FlowFile content, must end in a semi-colon.")
-            .required(false)
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-            .build();
+            .description(
+                    "The SQL select query to execute. The query can be empty, a constant value, or built from attributes "
+                            + "using Expression Language. If this property is specified, it will be used regardless of the content of "
+                            + "incoming flowfiles. If this property is empty, the content of the incoming flow file is expected "
+                            + "to contain a valid SQL select query, to be issued by the processor to the database. Note that Expression "
+                            + "Language is not evaluated for flow file contents. The query, regardless if specified in this property or the FlowFile content, must end in a semi-colon.")
+            .required(false).addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).build();
 
     @Override
     protected List<PropertyDescriptor> additionalDescriptors() {
