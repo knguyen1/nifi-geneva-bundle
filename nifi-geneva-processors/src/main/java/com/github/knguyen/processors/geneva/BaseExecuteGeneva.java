@@ -133,6 +133,45 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).sensitive(false).required(false)
             .addValidator(StandardValidators.PORT_VALIDATOR).build();
 
+    static final AllowableValue OUTPUT_ASCII = new AllowableValue("ascii", "ASCII",
+            "ASCII text with report run identifier. Default option if no other format is specified.");
+    static final AllowableValue OUTPUT_ASCII_NOID = new AllowableValue("asciinoid", "ASCII No ID",
+            "ASCII text without report run identifier.");
+    static final AllowableValue OUTPUT_ASCII_NOHEADER = new AllowableValue("asciinoheader", "ASCII No Header",
+            "ASCII text without report header or report run identifier.");
+    static final AllowableValue OUTPUT_BCP = new AllowableValue("bcp", "BCP",
+            "Pipe (|) delimited flat file records ready for loading into another database.");
+    static final AllowableValue OUTPUT_BCP_ID = new AllowableValue("bcpid", "BCP ID",
+            "Pipe (|) delimited flat file records with report run identifiers appended to each record.");
+    static final AllowableValue OUTPUT_BCP_NOSPACE = new AllowableValue("bcpnospace", "BCP No Space",
+            "Pipe (|) delimited flat file records that replace spaces in the report output with underscores (_).");
+    static final AllowableValue OUTPUT_COLUMNAR = new AllowableValue("col", "Columnar",
+            "(For runquery only) Columnar flat file records.");
+    static final AllowableValue OUTPUT_CSV = new AllowableValue("csv", "CSV",
+            "Comma-delimited flat file records without run identifier.");
+    static final AllowableValue OUTPUT_CSV_NOSPACE = new AllowableValue("csvnospace", "CSV No Space",
+            "Comma-delimited flat file records without run identifiers, that replace spaces in the report output with underscores (_).");
+    static final AllowableValue OUTPUT_JSON = new AllowableValue("json", "JSON", "JavaScript Object Notation format");
+    static final AllowableValue OUTPUT_PDF = new AllowableValue("pdf", "PDF",
+            "Adobe Portable Document Format. For information about including an image from a graphics file in the report, see “Including Images in PDF Reports” on page 179.");
+    static final AllowableValue OUTPUT_PDF_NOID = new AllowableValue("pdfnoid", "PDF No ID",
+            "Adobe Portable Document Format files without report run identifiers.");
+    static final AllowableValue OUTPUT_RMF = new AllowableValue("rmf", "RMF", "Report metafile (GenPAV).");
+    static final AllowableValue OUTPUT_TSV = new AllowableValue("tsv", "TSV", "Tab-separated values format.");
+    static final AllowableValue OUTPUT_XML = new AllowableValue("xml", "XML",
+            "A single XML file, <report>.xml, that contains all report output, as well as report arguments and addendum errors.");
+    static final AllowableValue OUTPUT_XML_ERROR = new AllowableValue("xmlerr", "XML Error",
+            "A <report>.xml file, that contains all report output; <report>.err, that contains the report’s addendum errors; and <report>.arg, that contains the report’s arguments.");
+
+    static final PropertyDescriptor REPORT_OUTPUT_FORMAT = new PropertyDescriptor.Builder().name("report-output-format")
+            .displayName("Report Output Format").description("Defines the output format of the report.").required(true)
+            .defaultValue(OUTPUT_CSV.getValue())
+            .allowableValues(OUTPUT_ASCII, OUTPUT_ASCII_NOID, OUTPUT_ASCII_NOHEADER, OUTPUT_BCP, OUTPUT_BCP_ID,
+                    OUTPUT_BCP_NOSPACE, OUTPUT_COLUMNAR, OUTPUT_CSV, OUTPUT_CSV_NOSPACE, OUTPUT_JSON, OUTPUT_PDF,
+                    OUTPUT_PDF_NOID, OUTPUT_RMF, OUTPUT_TSV, OUTPUT_XML, OUTPUT_XML_ERROR)
+            .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).addValidator(Validator.VALID)
+            .build();
+
     static final PropertyDescriptor REPORT_OUTPUT_PATH = new PropertyDescriptor.Builder().name("report-output-path")
             .displayName("Report Output Path")
             .description(
@@ -253,6 +292,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         baseDescriptors.add(PASSWORD);
         baseDescriptors.add(PRIVATE_KEY_PATH);
         baseDescriptors.add(PRIVATE_KEY_PASSPHRASE);
+        baseDescriptors.add(REPORT_OUTPUT_FORMAT);
         baseDescriptors.add(REPORT_OUTPUT_PATH);
         baseDescriptors.add(REPORT_OUTPUT_DIRECTORY);
         baseDescriptors.add(RUNREP_USERNAME);

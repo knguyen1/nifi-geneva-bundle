@@ -35,6 +35,8 @@ import org.mockito.MockitoAnnotations;
 
 class StandardRunrepArgumentProviderTest {
 
+    private final String MOCK_FLOW_UUID = "c480d5a6-9400-11ee-b9d1-0242ac120002";
+
     @Mock
     private ProcessContext context;
 
@@ -57,6 +59,7 @@ class StandardRunrepArgumentProviderTest {
         mockPropertyWithGivenValue(BaseExecuteGeneva.PERIOD_END_DATE, "2023-01-31T23:59:59");
         mockPropertyWithGivenValue(BaseExecuteGeneva.KNOWLEDGE_DATE, "2023-02-28T23:59:59");
         mockPropertyWithGivenValue(BaseExecuteGeneva.PRIOR_KNOWLEDGE_DATE, "2022-12-01T00:00:00");
+        mockPropertyWithGivenValue(BaseExecuteGeneva.REPORT_OUTPUT_FORMAT, "csv");
     }
 
     private void mockPropertyWithGivenValue(PropertyDescriptor propertyDescriptor, String value) {
@@ -221,7 +224,7 @@ class StandardRunrepArgumentProviderTest {
         when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
         when(propertyValue1.getValue()).thenReturn("");
 
-        when(flowfile.getAttribute(CoreAttributes.UUID.key())).thenReturn("c480d5a6-9400-11ee-b9d1-0242ac120002");
+        when(flowfile.getAttribute(CoreAttributes.UUID.key())).thenReturn(MOCK_FLOW_UUID);
 
         assertEquals(System.getProperty("java.io.tmpdir") + "/c480d5a6-9400-11ee-b9d1-0242ac120002.csv",
                 provider.getOutputPath());
@@ -239,8 +242,31 @@ class StandardRunrepArgumentProviderTest {
         when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
         when(propertyValue1.getValue()).thenReturn("C:/my user/my filename.csv");
 
-        when(flowfile.getAttribute(CoreAttributes.UUID.key())).thenReturn("c480d5a6-9400-11ee-b9d1-0242ac120002");
+        when(flowfile.getAttribute(CoreAttributes.UUID.key())).thenReturn(MOCK_FLOW_UUID);
 
         assertEquals("C:/my user/my filename.csv", provider.getOutputPath());
+    }
+
+    @Test
+    void testProvideNonDefaultFormatAndADirectory() {
+        // path must be blank in order to make use of directory
+        final var propertyValue2 = Mockito.mock(PropertyValue.class);
+        when(context.getProperty(BaseExecuteGeneva.REPORT_OUTPUT_PATH)).thenReturn(propertyValue2);
+        when(propertyValue2.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue2);
+        when(propertyValue2.getValue()).thenReturn("");
+
+        final var propertyValue0 = Mockito.mock(PropertyValue.class);
+        when(context.getProperty(BaseExecuteGeneva.REPORT_OUTPUT_DIRECTORY)).thenReturn(propertyValue0);
+        when(propertyValue0.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue0);
+        when(propertyValue0.getValue()).thenReturn("/tmp/me");
+
+        final var propertyValue1 = Mockito.mock(PropertyValue.class);
+        when(context.getProperty(BaseExecuteGeneva.REPORT_OUTPUT_FORMAT)).thenReturn(propertyValue1);
+        when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
+        when(propertyValue1.getValue()).thenReturn("json");
+
+        when(flowfile.getAttribute(CoreAttributes.UUID.key())).thenReturn(MOCK_FLOW_UUID);
+
+        assertEquals("/tmp/me/c480d5a6-9400-11ee-b9d1-0242ac120002.json", provider.getOutputPath());
     }
 }

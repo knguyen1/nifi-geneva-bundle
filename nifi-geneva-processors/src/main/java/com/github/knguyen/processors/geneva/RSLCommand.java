@@ -31,15 +31,19 @@ public class RSLCommand extends RunrepCommand {
         final String rslName = rslNameProperty.endsWith(".rsl")
                 ? rslNameProperty.substring(0, rslNameProperty.length() - 4) : rslNameProperty;
 
+        // get the output format
+        final String outputFormat = argumentProvider.getOutputFormat();
+
         // format the temporary filename
         final String outputFilename = getOuputFilename();
         final String reportParameters = getReportParameters();
 
         if (StringUtils.isNotBlank(reportParameters)) {
-            return String.format("read \"%s.rsl\"%nrunfile \"%s\" -f csv -o \"%s\" %s", rslName, rslName,
+            return String.format("read \"%s.rsl\"%nrunfile \"%s\" -f %s -o \"%s\" %s", rslName, rslName, outputFormat,
                     outputFilename, reportParameters);
         } else {
-            return String.format("read \"%s.rsl\"%nrunfile \"%s\" -f csv -o \"%s\"", rslName, rslName, outputFilename);
+            return String.format("read \"%s.rsl\"%nrunfile \"%s\" -f %s -o \"%s\"", rslName, rslName, outputFormat,
+                    outputFilename);
         }
     }
 }

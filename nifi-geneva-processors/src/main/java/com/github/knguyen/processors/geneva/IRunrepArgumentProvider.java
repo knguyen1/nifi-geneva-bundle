@@ -77,6 +77,20 @@ public interface IRunrepArgumentProvider {
     String getRSLName();
 
     /**
+     * Retrieves the file extension for the output report.
+     *
+     * @return A {@code String} representing the file extension for the output report.
+     */
+    String getFileExtension();
+
+    /**
+     * Retrieves the output format for the report.
+     *
+     * @return A {@code String} representing the output format for the report.
+     */
+    String getOutputFormat();
+
+    /**
      * Validates the provided arguments for the Runrep command.
      *
      * This method is responsible for ensuring that all the necessary arguments required to construct and execute a

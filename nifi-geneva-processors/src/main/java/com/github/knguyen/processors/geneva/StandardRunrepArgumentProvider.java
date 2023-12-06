@@ -168,7 +168,9 @@ public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
             return outputFilename;
 
         final String outputDirectory = getOutputDirectory();
-        return com.github.knguyen.processors.utils.StringUtils.getGuidFilename(outputDirectory, flowfile);
+        final String fileExtension = getFileExtension();
+        return com.github.knguyen.processors.utils.StringUtils.getGuidFilename(outputDirectory, flowfile,
+                fileExtension);
     }
 
     /**
@@ -366,6 +368,64 @@ public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
     @Override
     public String getRSLName() {
         return context.getProperty(ExecuteGenevaRSL.RSL_NAME).evaluateAttributeExpressions(flowfile).getValue();
+    }
+
+    /**
+     * Retrieves the output format for the output report.
+     *
+     * @return A {@code String} representing the output format for the output report.
+     */
+    @Override
+    public String getOutputFormat() {
+        // Assuming "outputFormat" is a variable representing the output format of the report
+        // The actual implementation might vary based on how the output format is stored and accessed
+        String outputFormat = context.getProperty(BaseExecuteGeneva.REPORT_OUTPUT_FORMAT)
+                .evaluateAttributeExpressions(flowfile).getValue();
+
+        if (StringUtils.isBlank(outputFormat))
+            outputFormat = "csv";
+
+        return outputFormat;
+    }
+
+    /**
+     * Retrieves the file extension for the output report based on the report output format.
+     *
+     * @return A {@code String} representing the file extension for the output report.
+     */
+    @Override
+    public String getFileExtension() {
+        final String outputFormat = getOutputFormat();
+
+        switch (outputFormat) {
+        case "json":
+            return ".json";
+        case "pdf":
+        case "pdfnoid":
+            return ".pdf";
+        case "xml":
+        case "xmlerr":
+            return ".xml";
+        case "tsv":
+            return ".tsv";
+        case "rmf":
+            return ".rmf";
+        case "csv":
+        case "csvnospace":
+            return ".csv";
+        case "bcp":
+        case "bcpid":
+        case "bcpnospace":
+            return ".txt"; // assuming bcp format is a text file
+        case "col":
+            return ".txt"; // assuming 'col' format is a text file
+        case "ascii":
+        case "asciinoid":
+        case "asciinoheader":
+            return ".txt"; // assuming ascii formats are text files
+        default:
+            throw new IllegalArgumentException("Unsupported output format: " + outputFormat);
+        }
     }
 
     @Override

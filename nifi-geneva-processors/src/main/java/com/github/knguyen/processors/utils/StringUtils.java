@@ -32,9 +32,9 @@ public final class StringUtils {
      *
      * @return A string representing the full path with the generated filename.
      */
-    public static String getGuidFilename(final String directory, final FlowFile flowfile) {
+    public static String getGuidFilename(final String directory, final FlowFile flowfile, final String extension) {
         final String flowfileId = flowfile.getAttribute(CoreAttributes.UUID.key());
-        final String filename = flowfileId + ".csv";
+        final String filename = flowfileId + extension;
         return Paths.get(directory, filename).toString();
     }
 
