@@ -63,7 +63,8 @@ class ExecuteGenevaArgsValidationTest extends BaseExecuteGenevaTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "123,Space In Portfolio,456", "invalid portfolio", "portfolio with spaces", "portfolio_with_unescaped_ spaces" })
+    @ValueSource(strings = { "123,Space In Portfolio,456", "invalid portfolio", "portfolio with spaces",
+            "portfolio_with_unescaped_ spaces" })
     void testSpaceInPortfolioMustBeEscaped2(String invalidPortfolioList) {
         final GenevaTestRunner gvaTestRunner = new GenevaTestRunner.Builder().withHostname(HOSTNAME)
                 .withUsername(USERNAME).withPassword(PASSWORD).withRunrepUsername(RUNREP_USERNAME)
@@ -74,7 +75,8 @@ class ExecuteGenevaArgsValidationTest extends BaseExecuteGenevaTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "foo&bar", "invalid hostname", "host name with spaces", "hostname_with_&_invalid_character" })
+    @ValueSource(strings = { "foo&bar", "invalid hostname", "host name with spaces",
+            "hostname_with_&_invalid_character" })
     void testInvalidHostname(String invalidHostname) {
         final GenevaTestRunner gvaTestRunner = new GenevaTestRunner.Builder().withHostname(invalidHostname)
                 .withRunrepUsername(RUNREP_USERNAME).withRunrepPassword(RUNREP_PASSWORD).withRSLName("netassets")
