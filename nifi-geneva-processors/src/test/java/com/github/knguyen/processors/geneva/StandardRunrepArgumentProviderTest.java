@@ -24,6 +24,7 @@ import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.flowfile.attributes.CoreAttributes;
 import org.apache.nifi.processor.ProcessContext;
+import org.apache.nifi.processor.ProcessSession;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,9 @@ class StandardRunrepArgumentProviderTest {
     private final String MOCK_FLOW_UUID = "c480d5a6-9400-11ee-b9d1-0242ac120002";
 
     @Mock
+    private ProcessSession session;
+
+    @Mock
     private ProcessContext context;
 
     @Mock
@@ -48,7 +52,7 @@ class StandardRunrepArgumentProviderTest {
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        provider = new StandardRunrepArgumentProvider(context, flowfile);
+        provider = new StandardRunrepArgumentProvider(session, context, flowfile);
 
         mockPropertyWithGivenValue(BaseExecuteGeneva.RUNREP_USERNAME, "user");
         mockPropertyWithGivenValue(BaseExecuteGeneva.RUNREP_PASSWORD, "password");
@@ -60,6 +64,7 @@ class StandardRunrepArgumentProviderTest {
         mockPropertyWithGivenValue(BaseExecuteGeneva.KNOWLEDGE_DATE, "2023-02-28T23:59:59");
         mockPropertyWithGivenValue(BaseExecuteGeneva.PRIOR_KNOWLEDGE_DATE, "2022-12-01T00:00:00");
         mockPropertyWithGivenValue(BaseExecuteGeneva.REPORT_OUTPUT_FORMAT, "csv");
+        mockPropertyWithGivenValue(ExecuteGenevaGSQL.GENEVA_SQL_QUERY, "test;");
     }
 
     private void mockPropertyWithGivenValue(PropertyDescriptor propertyDescriptor, String value) {

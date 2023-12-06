@@ -91,6 +91,13 @@ public interface IRunrepArgumentProvider {
     String getOutputFormat();
 
     /**
+     * Retrieves the GSQL query from the flowfile content.
+     *
+     * @return A {@code String} representing the GSQL query.
+     */
+    String getGSQLQuery();
+
+    /**
      * Validates the provided arguments for the Runrep command.
      *
      * This method is responsible for ensuring that all the necessary arguments required to construct and execute a

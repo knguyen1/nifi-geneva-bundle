@@ -17,11 +17,17 @@
 package com.github.knguyen.processors.geneva;
 
 import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
+import org.apache.nifi.processor.ProcessSession;
+import org.apache.nifi.stream.io.StreamUtils;
 import org.apache.nifi.util.StringUtils;
 
 /**
@@ -54,12 +60,18 @@ import org.apache.nifi.util.StringUtils;
 public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
     private final ProcessContext context;
     private final FlowFile flowfile;
+    private final ProcessSession session;
 
     /**
      * Constructs a new {@code StandardRunrepArgumentProvider} instance with the specified Apache NiFi
-     * {@code ProcessContext} and {@code FlowFile}. This constructor initializes the provider with the context and
-     * flowfile required for extracting and evaluating the necessary arguments for the Runrep process in a Geneva system
-     * environment.
+     * {@code ProcessSession}, {@code ProcessContext}, and {@code FlowFile}. This constructor initializes the provider
+     * with the context and flowfile required for extracting and evaluating the necessary arguments for the Runrep
+     * process in a Geneva system environment.
+     *
+     * @param session
+     *            The {@code ProcessSession} providing the capability to interact with the data flow of the running
+     *            process, including reading FlowFile content and creating, removing, or transferring FlowFiles. It is
+     *            utilized for accessing the content of the FlowFile dynamically.
      *
      * @param context
      *            The {@code ProcessContext} providing access to processor configuration and system information. It is
@@ -73,9 +85,11 @@ public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
      *             if either {@code context} or {@code flowfile} is null, ensuring that the provider is initialized with
      *             valid references for its operation.
      */
-    public StandardRunrepArgumentProvider(final ProcessContext context, final FlowFile flowfile) {
+    public StandardRunrepArgumentProvider(final ProcessSession session, final ProcessContext context,
+            final FlowFile flowfile) {
         this.context = context;
         this.flowfile = flowfile;
+        this.session = session;
     }
 
     /**
@@ -428,12 +442,52 @@ public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
         }
     }
 
+    /**
+     * Retrieves the GSQL query to be executed. The query is first attempted to be retrieved from the processor
+     * property. If it's not provided, the method reads the content of the FlowFile.
+     *
+     * @return A {@code String} representing the GSQL query. If the property is not set and the flowfile is empty, it
+     *         returns an empty string. If the property is set, it returns the property value, which may be dynamically
+     *         evaluated based on the flowfile attributes. If the property is not set, it reads the FlowFile content and
+     *         returns it as a string.
+     */
+    @Override
+    public String getGSQLQuery() {
+        String sqlQuery;
+
+        // first, attempt to get it from the property, if provided
+        try {
+            sqlQuery = context.getProperty(ExecuteGenevaGSQL.GENEVA_SQL_QUERY).evaluateAttributeExpressions(flowfile)
+                .getValue();
+
+            if (StringUtils.isNotBlank(sqlQuery))
+                return sqlQuery;
+        } catch (final IllegalStateException exc) {
+            // pass, this property is not used
+        }
+
+        // Read the contents of the flowfile into a byte array
+        final byte[] content = new byte[(int) flowfile.getSize()];
+        session.read(flowfile, in -> StreamUtils.fillBuffer(in, content, true));
+        sqlQuery = new String(content, 0, content.length, StandardCharsets.UTF_8);
+
+        return sqlQuery;
+    }
+
     @Override
     public void validate() throws IllegalArgumentException {
         validateUserCredentials();
         // validateOutputPath(); // does not work during unit tests
         validatePortfolioList();
         validateDateLogic();
+        // validateGSQLQuery(); // not required, we shouldn't validate this as this won't fit all use-cases
+    }
+
+    protected void validateGSQLQuery() {
+        final String gsqlQuery = getGSQLQuery();
+        if (StringUtils.isNotBlank(gsqlQuery) && !gsqlQuery.trim().endsWith(";")) {
+            throw new IllegalArgumentException("`GSQLQuery` must end with a semicolon (;)");
+        }
     }
 
     protected void validateUserCredentials() {

@@ -329,8 +329,8 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
 
     protected abstract IStreamHandler getStreamHandler();
 
-    protected abstract ICommand getCommand(final ProcessContext context, final FlowFile flowfile)
-            throws IllegalArgumentException;
+    protected abstract ICommand getCommand(final ProcessSession session, final ProcessContext context,
+            final FlowFile flowfile) throws IllegalArgumentException;
 
     @Override
     protected void init(final ProcessorInitializationContext context) {
@@ -385,7 +385,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         try (final RemoteCommandExecutor commandExecutor = createOrGetExecutor(context)) {
 
             // execute the cmd on the server
-            final ICommand command = getCommand(context, flowFile);
+            final ICommand command = getCommand(session, context, flowFile);
             final String resultCsvFile = command.getOutputResource();
 
             final Map<String, String> attributes = new HashMap<>();
@@ -427,7 +427,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             reportFailure(session, flowFile, genevaUser, exc, REL_FAILURE);
             throw new ProcessException("Unexpected error occured.", exc);
         } catch (final IllegalArgumentException exc) {
-            throw new ProcessException("Cannot validate arguments", exc);
+            throw new ProcessException(exc);
         }
     }
 

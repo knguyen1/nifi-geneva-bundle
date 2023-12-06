@@ -23,6 +23,7 @@ import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
+import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.util.StandardValidators;
 
 public class ExecuteGenevaRSL extends BaseExecuteGeneva {
@@ -44,9 +45,9 @@ public class ExecuteGenevaRSL extends BaseExecuteGeneva {
     }
 
     @Override
-    protected ICommand getCommand(final ProcessContext context, final FlowFile flowfile)
+    protected ICommand getCommand(final ProcessSession session, final ProcessContext context, final FlowFile flowfile)
             throws IllegalArgumentException {
-        var provider = new StandardRunrepArgumentProvider(context, flowfile);
+        var provider = new StandardRunrepArgumentProvider(session, context, flowfile);
         provider.validate();
         return new RSLCommand(provider);
     }
