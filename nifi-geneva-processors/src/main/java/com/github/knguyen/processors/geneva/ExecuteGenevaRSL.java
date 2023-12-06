@@ -45,6 +45,6 @@ public class ExecuteGenevaRSL extends BaseExecuteGeneva {
 
     @Override
     protected ICommand getCommand(final ProcessContext context, final FlowFile flowfile) {
-        return new RSLCommand(context, flowfile);
+        return new RSLCommand(new StandardRunrepArgumentProvider(context, flowfile));
     }
 }

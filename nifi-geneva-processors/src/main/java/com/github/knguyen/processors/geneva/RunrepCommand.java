@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.github.knguyen.processors.geneva;
 
 import java.util.Objects;
@@ -7,19 +23,17 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
-import org.apache.nifi.util.StringUtils;
 
 public abstract class RunrepCommand implements ICommand {
-    protected final ProcessContext context;
-    protected final FlowFile flowfile;
+
+    protected final IRunrepArgumentProvider argumentProvider;
 
     protected String commandStr;
     protected String outputResource;
     protected String obfuscatedCommand;
 
-    public RunrepCommand(final ProcessContext context, final FlowFile flowfile) {
-        this.context = context;
-        this.flowfile = flowfile;
+    public RunrepCommand(final IRunrepArgumentProvider argumentProvider) {
+        this.argumentProvider = argumentProvider;
         init();
     }
 
@@ -83,12 +97,9 @@ public abstract class RunrepCommand implements ICommand {
      *         is the obfuscated version of the command with sensitive information masked.
      */
     protected Pair<String, String> getRunrepConnectStr() {
-        final String genevaUser = context.getProperty(BaseExecuteGeneva.RUNREP_USERNAME)
-                .evaluateAttributeExpressions(flowfile).getValue();
-        final String genevaPassword = context.getProperty(BaseExecuteGeneva.RUNREP_PASSWORD)
-                .evaluateAttributeExpressions(flowfile).getValue();
-        final String genevaAga = context.getProperty(BaseExecuteGeneva.GENEVA_AGA)
-                .evaluateAttributeExpressions(flowfile).getValue();
+        final String genevaUser = argumentProvider.getGenevaUser();
+        final String genevaPassword = argumentProvider.getGenevaPassword();
+        final String genevaAga = argumentProvider.getGenevaAga();
 
         final String command = String.format("connect %s/%s -k %s", genevaUser, genevaPassword, genevaAga);
         final String obfuscatedCommand = String.format("connect %s/%s -k %s", genevaUser, "*********", genevaAga);
@@ -110,14 +121,7 @@ public abstract class RunrepCommand implements ICommand {
      * @return A string representing the output file name.
      */
     protected final String getOuputFilename() {
-        final String outputFilename = context.getProperty(BaseExecuteGeneva.REPORT_OUTPUT_PATH)
-                .evaluateAttributeExpressions(flowfile).getValue();
-        if (StringUtils.isNotBlank(outputFilename))
-            return outputFilename;
-
-        final String outputDirectory = context.getProperty(BaseExecuteGeneva.REPORT_OUTPUT_DIRECTORY)
-                .evaluateAttributeExpressions(flowfile).getValue();
-        return com.github.knguyen.processors.utils.StringUtils.getGuidFilename(outputDirectory, flowfile);
+        return argumentProvider.getOutputPath();
     }
 
     /**
@@ -134,22 +138,12 @@ public abstract class RunrepCommand implements ICommand {
      */
     protected String getReportParameters() {
         return Stream
-                .of(formatParameter("-p",
-                        context.getProperty(BaseExecuteGeneva.PORTFOLIO_LIST).evaluateAttributeExpressions(flowfile)
-                                .getValue()),
-                        formatParameter("-ps",
-                                context.getProperty(BaseExecuteGeneva.PERIOD_START_DATE)
-                                        .evaluateAttributeExpressions(flowfile).getValue()),
-                        formatParameter("-pe",
-                                context.getProperty(BaseExecuteGeneva.PERIOD_END_DATE)
-                                        .evaluateAttributeExpressions(flowfile).getValue()),
-                        formatParameter("-k",
-                                context.getProperty(BaseExecuteGeneva.KNOWLEDGE_DATE)
-                                        .evaluateAttributeExpressions(flowfile).getValue()),
-                        formatParameter("-pk",
-                                context.getProperty(BaseExecuteGeneva.PRIOR_KNOWLEDGE_DATE)
-                                        .evaluateAttributeExpressions(flowfile).getValue()),
-                        formatAccountingRunType(), formatReportConsolidation(), formatExtraFlags())
+                .of(formatParameter("-p", argumentProvider.getPortfolioList()),
+                        formatParameter("-ps", argumentProvider.getPeriodStartDate()),
+                        formatParameter("-pe", argumentProvider.getPeriodEndDate()),
+                        formatParameter("-k", argumentProvider.getKnowledgeDate()),
+                        formatParameter("-pk", argumentProvider.getPriorKnowledgeDate()), formatAccountingRunType(),
+                        formatReportConsolidation(), formatExtraFlags())
                 .filter(Objects::nonNull).collect(Collectors.joining(" "));
     }
 
@@ -175,8 +169,7 @@ public abstract class RunrepCommand implements ICommand {
      * @return The trimmed string of extra flags, or null if the extra flags property value is blank.
      */
     private String formatExtraFlags() {
-        String extraFlags = context.getProperty(BaseExecuteGeneva.EXTRA_FLAGS).evaluateAttributeExpressions(flowfile)
-                .getValue();
+        final String extraFlags = argumentProvider.getExtraFlags();
         return org.apache.nifi.util.StringUtils.isNotBlank(extraFlags) ? extraFlags.trim() : null;
     }
 
@@ -191,8 +184,7 @@ public abstract class RunrepCommand implements ICommand {
      *         or blank.
      */
     private String formatReportConsolidation() {
-        String consolidationValue = context.getProperty(BaseExecuteGeneva.REPORT_CONSOLIDATION)
-                .evaluateAttributeExpressions(flowfile).getValue();
+        String consolidationValue = argumentProvider.getReportConsolidation();
 
         // Check if the value is not NONE_CONSOLIDATED and not null/blank
         if (!BaseExecuteGeneva.NONE_CONSOLIDATED.getValue().equals(consolidationValue)
@@ -211,8 +203,7 @@ public abstract class RunrepCommand implements ICommand {
      * @return The parameter string or null if the condition is not met.
      */
     private String formatAccountingRunType() {
-        String accountingRunType = context.getProperty(BaseExecuteGeneva.ACCOUNTING_RUN_TYPE)
-                .evaluateAttributeExpressions(flowfile).getValue();
+        final String accountingRunType = argumentProvider.getAccountingRunType();
 
         // Check if the accounting run type is not dynamic and not blank
         if (!BaseExecuteGeneva.DYNAMIC_ACCOUNTING.getValue().equals(accountingRunType)
