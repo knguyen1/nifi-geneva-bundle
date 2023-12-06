@@ -89,8 +89,6 @@ public interface IRunrepArgumentProvider {
      *
      * @throws IllegalArgumentException
      *             If any of the arguments do not meet the validation criteria.
-     * @throws NullPointerException
-     *             If any of the required arguments are null.
      */
-    void validate() throws IllegalArgumentException, NullPointerException;
+    void validate() throws IllegalArgumentException;
 }

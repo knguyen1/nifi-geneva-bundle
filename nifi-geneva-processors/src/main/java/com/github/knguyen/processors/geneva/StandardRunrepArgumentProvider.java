@@ -19,7 +19,6 @@ package com.github.knguyen.processors.geneva;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.Objects;
 
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
@@ -370,19 +369,22 @@ public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
     }
 
     @Override
-    public void validate() throws IllegalArgumentException, NullPointerException {
+    public void validate() throws IllegalArgumentException {
         validateUserCredentials();
         // validateOutputPath(); // does not work during unit tests
         validatePortfolioList();
         validateDateLogic();
     }
 
-    private void validateUserCredentials() {
-        Objects.requireNonNull(getGenevaUser(), "`runrep` user cannot be null");
-        Objects.requireNonNull(getGenevaPassword(), "`runrep` password cannot be null");
+    protected void validateUserCredentials() {
+        if (StringUtils.isBlank(getGenevaUser()))
+            throw new IllegalArgumentException("`runrep` user cannot be null");
+
+        if (StringUtils.isBlank(getGenevaPassword()))
+            throw new IllegalArgumentException("`runrep` password cannot be null");
     }
 
-    private void validateOutputPath() {
+    protected void validateOutputPath() {
         // Validate output path
         final String outputPath = getOutputPath();
         final File outputFile = new File(outputPath);
@@ -399,7 +401,7 @@ public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
         }
     }
 
-    private void validatePortfolioList() {
+    protected void validatePortfolioList() {
         // Validate portfolio list
         if (StringUtils.isNotBlank(getPortfolioList())) {
             String[] portfolios = getPortfolioList().split(",");
@@ -414,7 +416,7 @@ public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
         }
     }
 
-    private void validateDateLogic() {
+    protected void validateDateLogic() {
         // Date validations
         final LocalDateTime periodStartDate = validateDateArgument(getPeriodStartDate(),
                 BaseExecuteGeneva.PERIOD_START_DATE.getDisplayName());

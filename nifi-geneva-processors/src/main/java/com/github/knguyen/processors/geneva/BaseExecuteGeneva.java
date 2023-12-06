@@ -138,7 +138,7 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             .description(
                     "Specifies the absolute, fully-qualified path for the report output, which corresponds to the `-o` option for `runrep`. The path should be accessible and writable by `runrep`. When this property is set, the `Report Output Directory` property is ignored. If this property is not set, NiFi will use the `Report Output Directory` value and generate a filename matching the FlowFile's `UUID`.  Keep in mind that by using this property, you effectively set a constant filepath for writing reports.  This means that successive executions of flowfiles in the same given pipeline will overwrite any existing reports at this locatio.  This could be desirable for certain scenarios, such as when using processing pipelines external to NiFi that require data at a fixed location.")
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).sensitive(false).required(false)
-            .addValidator(CustomValidators.DIRECTORY_EXISTS_FROM_PATH_VALIDATOR).build();
+            .addValidator(Validator.VALID).build();
 
     static final PropertyDescriptor REPORT_OUTPUT_DIRECTORY = new PropertyDescriptor.Builder()
             .name("report-output-directory").displayName("Report Output Directory")
@@ -289,7 +289,8 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
 
     protected abstract IStreamHandler getStreamHandler();
 
-    protected abstract ICommand getCommand(final ProcessContext context, final FlowFile flowfile);
+    protected abstract ICommand getCommand(final ProcessContext context, final FlowFile flowfile)
+            throws IllegalArgumentException;
 
     @Override
     protected void init(final ProcessorInitializationContext context) {
@@ -385,6 +386,8 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         } catch (final IOException exc) {
             reportFailure(session, flowFile, genevaUser, exc, REL_FAILURE);
             throw new ProcessException("Unexpected error occured.", exc);
+        } catch (final IllegalArgumentException exc) {
+            throw new ProcessException("Cannot validate arguments", exc);
         }
     }
 

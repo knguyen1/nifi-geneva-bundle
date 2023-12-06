@@ -139,13 +139,13 @@ class ExecuteGenvaRSLTest extends BaseExecuteGenevaTest {
         final String commandPattern = "runrep -f empty.lst -b << EOF" + System.lineSeparator() + //
                 "connect fez/\\*\\*\\*\\*\\*\\*\\*\\*\\* -k 1234" + System.lineSeparator() + //
                 "read \"positions.rsl\"" + System.lineSeparator() + //
-                "runfile \"positions\" -f csv -o \"C:/users/me/my report file.csv\"" + System.lineSeparator() + //
+                "runfile \"positions\" -f csv -o \"/tmp/my report file.csv\"" + System.lineSeparator() + //
                 "exit" + System.lineSeparator() + //
                 "EOF\n";
 
         final GenevaTestRunner gvaTestRunner = new GenevaTestRunner.Builder().withHostname(HOSTNAME).withUsername("foo")
                 .withPassword("bar").withRunrepUsername("fez").withRunrepPassword("faz").withGenevaAga(1234)
-                .withRSLName("positions").withReportOutputPath("C:/users/me/my report file.csv")
+                .withRSLName("positions").withReportOutputPath("/tmp/my report file.csv")
                 .withExpectedCommandPattern(commandPattern).build();
 
         gvaTestRunner.execute(this);
@@ -158,7 +158,7 @@ class ExecuteGenvaRSLTest extends BaseExecuteGenevaTest {
                 return argument.matches("runrep -f empty.lst -b << EOF" + System.lineSeparator() + //
                         "connect fez/faz -k 1234" + System.lineSeparator() + //
                         "read \"positions.rsl\"" + System.lineSeparator() + //
-                        "runfile \"positions\" -f csv -o \"C:/users/me/my report file.csv\"" + System.lineSeparator() + //
+                        "runfile \"positions\" -f csv -o \"/tmp/my report file.csv\"" + System.lineSeparator() + //
                         "exit" + System.lineSeparator() + //
                         "EOF\n");
             }
