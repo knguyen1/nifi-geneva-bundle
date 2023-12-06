@@ -22,6 +22,8 @@ import org.apache.nifi.util.TestRunners;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.github.knguyen.processors.geneva.runners.GenevaTestRunner;
+
 class ExecuteGenevaArgsValidationTest extends BaseExecuteGenevaTest {
     @BeforeEach
     public void setup() {

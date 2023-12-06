@@ -14,10 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.knguyen.processors.geneva;
+package com.github.knguyen.processors.geneva.runners;
 
 import org.apache.nifi.logging.ComponentLog;
 import org.apache.nifi.processor.ProcessContext;
+
+import com.github.knguyen.processors.geneva.RemoteCommandExecutor;
+import com.github.knguyen.processors.geneva.RemoteCommandExecutorProvider;
 
 public class SSHCommandExecutorForTestProvider implements RemoteCommandExecutorProvider {
     @Override

@@ -26,18 +26,20 @@ import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.StringUtils;
 import org.apache.nifi.util.TestRunner;
 
+import com.github.knguyen.processors.geneva.runners.IExecuteGenevaTest;
+
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
-abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
+public abstract class BaseExecuteGenevaTest implements IExecuteGenevaTest {
 
-    protected static String HOSTNAME = "my.geneva.server.com";
-    protected static String USERNAME = "foo";
-    protected static String PASSWORD = "bar";
-    protected static String RUNREP_USERNAME = "runrepusr";
-    protected static String RUNREP_PASSWORD = "runreppass";
+    public static String HOSTNAME = "my.geneva.server.com";
+    public static String USERNAME = "foo";
+    public static String PASSWORD = "bar";
+    public static String RUNREP_USERNAME = "runrepusr";
+    public static String RUNREP_PASSWORD = "runreppass";
 
     protected TestRunner testRunner;
 

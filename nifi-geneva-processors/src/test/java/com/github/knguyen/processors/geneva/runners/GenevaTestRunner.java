@@ -14,12 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.knguyen.processors.geneva;
+package com.github.knguyen.processors.geneva.runners;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+
+import com.github.knguyen.processors.geneva.BaseExecuteGenevaTest;
 
 /**
  * The `GenevaTestRunner` class is used for running Geneva tests via SSH. It encapsulates various configuration

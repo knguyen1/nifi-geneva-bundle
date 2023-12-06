@@ -42,6 +42,10 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import com.github.knguyen.processors.geneva.runners.GenevaTestRunner;
+import com.github.knguyen.processors.geneva.runners.SSHCommandExecutorForTestProvider;
+import com.github.knguyen.processors.geneva.runners.SSHCommandExecutorForTesting;
+
 class ExecuteGenvaRSLTest extends BaseExecuteGenevaTest {
     @Mock
     private SSHClient mockSshClient;

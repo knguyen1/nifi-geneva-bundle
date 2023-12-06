@@ -19,6 +19,7 @@ package com.github.knguyen.processors.geneva;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
+import org.apache.nifi.components.PropertyDescriptor;
 import org.apache.nifi.components.PropertyValue;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.flowfile.attributes.CoreAttributes;
@@ -26,6 +27,8 @@ import org.apache.nifi.processor.ProcessContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -44,50 +47,26 @@ class StandardRunrepArgumentProviderTest {
     public void setup() {
         MockitoAnnotations.openMocks(this);
         provider = new StandardRunrepArgumentProvider(context, flowfile);
+
+        mockPropertyWithGivenValue(BaseExecuteGeneva.RUNREP_USERNAME, "user");
+        mockPropertyWithGivenValue(BaseExecuteGeneva.RUNREP_PASSWORD, "password");
+        mockPropertyWithGivenValue(BaseExecuteGeneva.PORTFOLIO_LIST, "123,\\\"My Portfolio\\\",456");
+        mockPropertyWithGivenValue(BaseExecuteGeneva.ACCOUNTING_RUN_TYPE, BaseExecuteGeneva.CLOSED_PERIOD_ACCOUNTING.getValue());
+        mockPropertyWithGivenValue(BaseExecuteGeneva.PERIOD_START_DATE, "2023-01-01T00:00:00");
+        mockPropertyWithGivenValue(BaseExecuteGeneva.PERIOD_END_DATE, "2023-01-31T23:59:59");
+        mockPropertyWithGivenValue(BaseExecuteGeneva.KNOWLEDGE_DATE, "2023-02-28T23:59:59");
+        mockPropertyWithGivenValue(BaseExecuteGeneva.PRIOR_KNOWLEDGE_DATE, "2022-12-01T00:00:00");
+    }
+
+    private void mockPropertyWithGivenValue(PropertyDescriptor propertyDescriptor, String value) {
+        final var propertyValue = Mockito.mock(PropertyValue.class);
+        when(context.getProperty(propertyDescriptor)).thenReturn(propertyValue);
+        when(propertyValue.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue);
+        when(propertyValue.getValue()).thenReturn(value);
     }
 
     @Test
     void testControlCaseValidArgumentsDoesNotThrow() {
-        final var propertyValue1 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.RUNREP_USERNAME)).thenReturn(propertyValue1);
-        when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
-        when(propertyValue1.getValue()).thenReturn("user");
-
-        final var propertyValue2 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.RUNREP_PASSWORD)).thenReturn(propertyValue2);
-        when(propertyValue2.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue2);
-        when(propertyValue2.getValue()).thenReturn("pass");
-
-        final var propertyValue3 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PORTFOLIO_LIST)).thenReturn(propertyValue3);
-        when(propertyValue3.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue3);
-        when(propertyValue3.getValue()).thenReturn("123,\\\"My Portfolio\\\",456");
-
-        final var propertyValue0 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.ACCOUNTING_RUN_TYPE)).thenReturn(propertyValue0);
-        when(propertyValue0.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue0);
-        when(propertyValue0.getValue()).thenReturn(BaseExecuteGeneva.CLOSED_PERIOD_ACCOUNTING.getValue());
-
-        final var propertyValue4 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PERIOD_START_DATE)).thenReturn(propertyValue4);
-        when(propertyValue4.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue4);
-        when(propertyValue4.getValue()).thenReturn("2023-01-01T00:00:00");
-
-        final var propertyValue5 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PERIOD_END_DATE)).thenReturn(propertyValue5);
-        when(propertyValue5.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue5);
-        when(propertyValue5.getValue()).thenReturn("2023-01-31T23:59:59");
-
-        final var propertyValue6 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.KNOWLEDGE_DATE)).thenReturn(propertyValue6);
-        when(propertyValue6.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue6);
-        when(propertyValue6.getValue()).thenReturn("2023-01-31T23:59:59");
-
-        final var propertyValue7 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PRIOR_KNOWLEDGE_DATE)).thenReturn(propertyValue7);
-        when(propertyValue7.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue7);
-        when(propertyValue7.getValue()).thenReturn("2022-12-01T00:00:00");
-
         Assertions.assertDoesNotThrow(() -> provider.validate());
     }
 
@@ -105,11 +84,6 @@ class StandardRunrepArgumentProviderTest {
 
     @Test
     void testValidateThrowsExceptionForBlankPasword() {
-        final var propertyValue1 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.RUNREP_USERNAME)).thenReturn(propertyValue1);
-        when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
-        when(propertyValue1.getValue()).thenReturn("user");
-
         final var propertyValue2 = Mockito.mock(PropertyValue.class);
         when(context.getProperty(BaseExecuteGeneva.RUNREP_PASSWORD)).thenReturn(propertyValue2);
         when(propertyValue2.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue2);
@@ -121,112 +95,39 @@ class StandardRunrepArgumentProviderTest {
 
     @Test
     void testValidUsernamePasswordDoesNotThrow() {
-        final var propertyValue1 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.RUNREP_USERNAME)).thenReturn(propertyValue1);
-        when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
-        when(propertyValue1.getValue()).thenReturn("user");
-
-        final var propertyValue2 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.RUNREP_PASSWORD)).thenReturn(propertyValue2);
-        when(propertyValue2.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue2);
-        when(propertyValue2.getValue()).thenReturn("password");
-
         Assertions.assertDoesNotThrow(() -> provider.validateUserCredentials());
     }
 
-    @Test
-    void testValidatePassesForValidPortfolioList1() {
+    @ParameterizedTest
+    @ValueSource(strings = { "123,456", "123", "123,\\\"My Portfolio\\\",456", "123-abc,456-distressed" })
+    void testValidatePassesValidPortfolios(String portfolioList) {
         // Mocking a valid portfolio list
         final var propertyValue1 = Mockito.mock(PropertyValue.class);
         when(context.getProperty(BaseExecuteGeneva.PORTFOLIO_LIST)).thenReturn(propertyValue1);
         when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
-        when(propertyValue1.getValue()).thenReturn("123,456");
+        when(propertyValue1.getValue()).thenReturn(portfolioList);
 
         Assertions.assertDoesNotThrow(() -> provider.validatePortfolioList());
     }
 
-    @Test
-    void testASinglePortfolioIsValid() {
+    @ParameterizedTest
+    @ValueSource(strings = { "123,My Portfolio,456", "123,\\\"My Portfolio,456", "123,My Portfolio\\\",456", "\\\"123,My Portfolio,456\\\"" })
+    void testValidateFailsInvalidMultiplePortfolios(String portfolioList) {
         // Mocking a valid portfolio list
         final var propertyValue1 = Mockito.mock(PropertyValue.class);
         when(context.getProperty(BaseExecuteGeneva.PORTFOLIO_LIST)).thenReturn(propertyValue1);
         when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
-        when(propertyValue1.getValue()).thenReturn("123");
-
-        Assertions.assertDoesNotThrow(() -> provider.validatePortfolioList());
-    }
-
-    @Test
-    void testValidatePassesForValidPortfolioList2() {
-        // Mocking a valid portfolio list
-        final var propertyValue1 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PORTFOLIO_LIST)).thenReturn(propertyValue1);
-        when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
-        when(propertyValue1.getValue()).thenReturn("123,\\\"My Portfolio\\\",456");
-
-        Assertions.assertDoesNotThrow(() -> provider.validatePortfolioList());
-    }
-
-    @Test
-    void testInvalidPortfolioList1() {
-        // Mocking a valid portfolio list
-        final var propertyValue1 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PORTFOLIO_LIST)).thenReturn(propertyValue1);
-        when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
-        when(propertyValue1.getValue()).thenReturn("123,My Portfolio,456");
+        when(propertyValue1.getValue()).thenReturn(portfolioList);
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> provider.validatePortfolioList());
     }
 
     @Test
-    void testInvalidPortfolioList2() {
-        // Mocking a valid portfolio list
-        final var propertyValue1 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PORTFOLIO_LIST)).thenReturn(propertyValue1);
-        when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
-        when(propertyValue1.getValue()).thenReturn("123,\\\"My Portfolio,456");
-
-        Assertions.assertThrows(IllegalArgumentException.class, () -> provider.validatePortfolioList());
-    }
-
-    @Test
-    void testInvalidPortfolioList3() {
-        // Mocking a valid portfolio list
-        final var propertyValue1 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PORTFOLIO_LIST)).thenReturn(propertyValue1);
-        when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
-        when(propertyValue1.getValue()).thenReturn("123,My Portfolio\\\",456");
-
-        Assertions.assertThrows(IllegalArgumentException.class, () -> provider.validatePortfolioList());
-    }
-
-    @Test
-    void testInvalidPortfolioList4() {
-        // Mocking a valid portfolio list
-        final var propertyValue1 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PORTFOLIO_LIST)).thenReturn(propertyValue1);
-        when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
-        when(propertyValue1.getValue()).thenReturn("\\\"123,My Portfolio,456\\\"");
-
-        Assertions.assertThrows(IllegalArgumentException.class, () -> provider.validatePortfolioList());
-    }
-
-    @Test
-    void testValidPeriodStartDateValidPeriodEndDate() {
+    void testValidatePassesDynamicAccounting() {
         final var propertyValue0 = Mockito.mock(PropertyValue.class);
         when(context.getProperty(BaseExecuteGeneva.ACCOUNTING_RUN_TYPE)).thenReturn(propertyValue0);
         when(propertyValue0.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue0);
         when(propertyValue0.getValue()).thenReturn(BaseExecuteGeneva.DYNAMIC_ACCOUNTING.getValue());
-
-        final var propertyValue1 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PERIOD_START_DATE)).thenReturn(propertyValue1);
-        when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
-        when(propertyValue1.getValue()).thenReturn("2023-01-01T00:00:00");
-
-        final var propertyValue2 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PERIOD_END_DATE)).thenReturn(propertyValue2);
-        when(propertyValue2.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue2);
-        when(propertyValue2.getValue()).thenReturn("2023-01-31T23:59:59");
 
         final var propertyValue3 = Mockito.mock(PropertyValue.class);
         when(context.getProperty(BaseExecuteGeneva.KNOWLEDGE_DATE)).thenReturn(propertyValue3);
@@ -273,41 +174,16 @@ class StandardRunrepArgumentProviderTest {
 
     @Test
     void testClosedPeriodValidDates() {
-        final var propertyValue0 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.ACCOUNTING_RUN_TYPE)).thenReturn(propertyValue0);
-        when(propertyValue0.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue0);
-        when(propertyValue0.getValue()).thenReturn(BaseExecuteGeneva.CLOSED_PERIOD_ACCOUNTING.getValue());
-
-        final var propertyValue1 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PERIOD_START_DATE)).thenReturn(propertyValue1);
-        when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
-        when(propertyValue1.getValue()).thenReturn("2023-01-01T00:00:00");
-
-        final var propertyValue2 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PERIOD_END_DATE)).thenReturn(propertyValue2);
-        when(propertyValue2.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue2);
-        when(propertyValue2.getValue()).thenReturn("2023-01-31T23:59:59");
-
         final var propertyValue3 = Mockito.mock(PropertyValue.class);
         when(context.getProperty(BaseExecuteGeneva.KNOWLEDGE_DATE)).thenReturn(propertyValue3);
         when(propertyValue3.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue3);
-        when(propertyValue3.getValue()).thenReturn("");
-
-        final var propertyValue4 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PRIOR_KNOWLEDGE_DATE)).thenReturn(propertyValue4);
-        when(propertyValue4.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue4);
-        when(propertyValue4.getValue()).thenReturn("2022-12-01T00:00:00");
+        when(propertyValue3.getValue()).thenReturn("2023-05-01T23:59:59");
 
         Assertions.assertDoesNotThrow(() -> provider.validateDateLogic());
     }
 
     @Test
     void testClosedPeriodButNoPriorKnowledgeDate() {
-        final var propertyValue0 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.ACCOUNTING_RUN_TYPE)).thenReturn(propertyValue0);
-        when(propertyValue0.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue0);
-        when(propertyValue0.getValue()).thenReturn(BaseExecuteGeneva.CLOSED_PERIOD_ACCOUNTING.getValue());
-
         final var propertyValue1 = Mockito.mock(PropertyValue.class);
         when(context.getProperty(BaseExecuteGeneva.PERIOD_START_DATE)).thenReturn(propertyValue1);
         when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
