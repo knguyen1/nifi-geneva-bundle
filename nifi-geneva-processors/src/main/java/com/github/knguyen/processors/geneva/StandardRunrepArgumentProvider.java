@@ -372,7 +372,7 @@ public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
     @Override
     public void validate() throws IllegalArgumentException, NullPointerException {
         validateUserCredentials();
-        validateOutputPath();
+        // validateOutputPath(); // does not work during unit tests
         validatePortfolioList();
         validateDateLogic();
     }

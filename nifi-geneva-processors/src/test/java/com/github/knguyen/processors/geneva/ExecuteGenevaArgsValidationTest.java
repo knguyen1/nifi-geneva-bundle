@@ -22,7 +22,7 @@ import org.apache.nifi.util.TestRunners;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ExecuteGenevaArgsValidationTests extends BaseExecuteGenevaTest {
+class ExecuteGenevaArgsValidationTest extends BaseExecuteGenevaTest {
     @BeforeEach
     public void setup() {
         testRunner = TestRunners.newTestRunner(ExecuteGenevaRSL.class);
