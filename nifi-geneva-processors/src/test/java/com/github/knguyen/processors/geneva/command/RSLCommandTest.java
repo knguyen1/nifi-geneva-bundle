@@ -39,13 +39,7 @@ class RSLCommandTest extends BaseCommandTest {
         super.setup();
 
         // Add specific mock behaviors for FirstTestClass
-        when(runrepArgumentProviderMock.getOutputFilename())
-                .thenReturn("/usr/advent/geneva-20.0.0/share/rslspecs/my-report.csv");
-        when(runrepArgumentProviderMock.getOutputPath())
-                .thenReturn("/usr/advent/geneva-20.0.0/share/rslspecs/my-report.csv");
         when(runrepArgumentProviderMock.getRSLName()).thenReturn("my_positions.rsl");
-        when(runrepArgumentProviderMock.getFileExtension()).thenReturn(".csv");
-        when(runrepArgumentProviderMock.getOutputFormat()).thenReturn("csv");
     }
 
     @Test

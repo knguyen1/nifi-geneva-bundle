@@ -16,9 +16,9 @@
  */
 package com.github.knguyen.processors.geneva.command;
 
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Arrays;
+
+import org.apache.nifi.util.StringUtils;
 
 import com.github.knguyen.processors.geneva.argument.IRunrepArgumentProvider;
 
@@ -39,40 +39,34 @@ public class StoredQueryCommand extends RunrepCommand {
         final String runCommandName = argumentProvider.getRunCommandName();
         final String runCommandTarget = argumentProvider.getRunCommandTarget();
 
-        String finalCommand = String.format("%s \"%s\" -f %s -o %s %s", runCommandName, runCommandTarget, outputFormat,
-                outputFilename, reportParameters);
-        finalCommand = finalCommand.trim();
+        // Check if runCommandTarget contains spaces and enclose in quotes if it does
+        final String formattedRunCommandTarget = runCommandTarget.contains(" ") ? "\"" + runCommandTarget + "\""
+                : runCommandTarget;
 
-        return finalCommand;
+        return String.format("%s %s -f %s -o %s %s", runCommandName, formattedRunCommandTarget, outputFormat,
+                outputFilename, reportParameters).trim();
     }
 
-    /**
-     * Constructs a string of report parameters based on the processor context and a flowfile for the "GSQL" command
-     * class.
-     *
-     * This method formats each property's value into a string parameter if the property value is set and not blank. The
-     * parameters are then joined together into a single string with a space between each one.
-     *
-     * The method handles the formatting of the following properties: 'Portfolio', 'PeriodStartDate', 'PeriodEndDate',
-     * 'KnowledgeDate', 'PriorKnowledgeDate', 'AccountingRunType', 'ReportConsolidation', and 'ExtraFlags'. The
-     * parameter names have been updated from the base implementation to match the requirements of the "GSQL" command
-     * class.
-     *
-     * The 'runfile' command recognizes options like 'ps', 'pe', 'k', etc. However, the 'rungsql' command does not
-     * recognize these parameters. Instead, parameters such as 'PeriodStartDate' must be used in the query under the
-     * GIVEN clause, e.g. GIVEN PeriodStartDate = :PeriodStartDate
-     *
-     * @return A string of report parameters formatted for the "GSQL" command class.
-     */
     @Override
-    protected String getReportParameters() {
-        return Stream
-                .of(formatParameter("--Portfolio", argumentProvider.getPortfolioList()),
-                        formatParameter("--PeriodStartDate", argumentProvider.getPeriodStartDate()),
-                        formatParameter("--PeriodEndDate", argumentProvider.getPeriodEndDate()),
-                        formatParameter("--KnowledgeDate", argumentProvider.getKnowledgeDate()),
-                        formatParameter("--PriorKnowledgeDate", argumentProvider.getPriorKnowledgeDate()),
-                        formatAccountingRunType(), formatReportConsolidation(), formatExtraFlags())
-                .filter(Objects::nonNull).collect(Collectors.joining(" "));
+    public void validate() {
+        argumentProvider.validate();
+
+        final String runCommandName = argumentProvider.getRunCommandName();
+        final String runCommandTarget = argumentProvider.getRunCommandTarget();
+
+        if (StringUtils.isBlank(runCommandName))
+            throw new IllegalArgumentException("`runCommandName` cannot be null");
+
+        if (StringUtils.isBlank(runCommandTarget))
+            throw new IllegalArgumentException("`runCommandTarget` cannot be null");
+
+        // Check if runCommandName is one of the specified values
+        if (!Arrays.asList("run", "runfile", "runf", "runnumber", "runquery").contains(runCommandName))
+            throw new IllegalArgumentException(
+                    "`runCommandName` must be one of 'run', 'runfile', 'runf', 'runnumber', 'runquery'.");
+
+        if (runCommandTarget.trim().startsWith("-"))
+            throw new IllegalArgumentException(
+                    "`runCommandTarget` starts with a '-' character; runrep will misinterpret this as flags.  You can fix this issue by temporarily renaming the object.");
     }
 }

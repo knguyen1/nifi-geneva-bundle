@@ -32,5 +32,14 @@ abstract class BaseCommandTest {
         when(runrepArgumentProviderMock.getReportConsolidation())
                 .thenReturn(BaseExecuteGeneva.NONE_CONSOLIDATED.getValue());
         when(runrepArgumentProviderMock.getExtraFlags()).thenReturn(org.apache.nifi.util.StringUtils.EMPTY);
+
+        // some output info
+        when(runrepArgumentProviderMock.getOutputFilename())
+                .thenReturn("/usr/advent/geneva-20.0.0/share/rslspecs/my-report.csv");
+        when(runrepArgumentProviderMock.getOutputPath())
+                .thenReturn("/usr/advent/geneva-20.0.0/share/rslspecs/my-report.csv");
+        when(runrepArgumentProviderMock.getRSLName()).thenReturn("my_positions.rsl");
+        when(runrepArgumentProviderMock.getFileExtension()).thenReturn(".csv");
+        when(runrepArgumentProviderMock.getOutputFormat()).thenReturn("csv");
     }
 }

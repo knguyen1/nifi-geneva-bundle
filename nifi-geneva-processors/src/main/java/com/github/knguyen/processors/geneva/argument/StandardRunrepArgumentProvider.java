@@ -484,8 +484,13 @@ public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
 
     @Override
     public String getRunCommandName() {
-        return context.getProperty(ExecuteGenevaStoredQuery.RUN_COMMAND_NAME).evaluateAttributeExpressions(flowfile)
-                .getValue();
+        final var commandName = context.getProperty(ExecuteGenevaStoredQuery.RUN_COMMAND_NAME)
+                .evaluateAttributeExpressions(flowfile).getValue();
+
+        if (StringUtils.isNotBlank(commandName))
+            return commandName.trim().toLowerCase();
+
+        return null;
     }
 
     @Override

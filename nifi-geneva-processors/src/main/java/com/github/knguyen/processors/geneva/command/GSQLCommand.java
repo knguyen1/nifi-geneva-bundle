@@ -16,11 +16,15 @@
  */
 package com.github.knguyen.processors.geneva.command;
 
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.nifi.util.StringUtils;
 
 import com.github.knguyen.processors.geneva.argument.IRunrepArgumentProvider;
 
-public class GSQLCommand extends StoredQueryCommand {
+public class GSQLCommand extends RunrepCommand {
     public GSQLCommand(IRunrepArgumentProvider argumentProvider) {
         super(argumentProvider);
     }
@@ -43,6 +47,36 @@ public class GSQLCommand extends StoredQueryCommand {
         } else {
             return String.format("rungsql -f %s -o \"%s\"%n%s", outputFormat, outputFilename, gsqlQuery);
         }
+    }
+
+    /**
+     * Constructs a string of report parameters based on the processor context and a flowfile for the "GSQL" command
+     * class.
+     *
+     * This method formats each property's value into a string parameter if the property value is set and not blank. The
+     * parameters are then joined together into a single string with a space between each one.
+     *
+     * The method handles the formatting of the following properties: 'Portfolio', 'PeriodStartDate', 'PeriodEndDate',
+     * 'KnowledgeDate', 'PriorKnowledgeDate', 'AccountingRunType', 'ReportConsolidation', and 'ExtraFlags'. The
+     * parameter names have been updated from the base implementation to match the requirements of the "GSQL" command
+     * class.
+     *
+     * The 'runfile' command recognizes options like 'ps', 'pe', 'k', etc. However, the 'rungsql' command does not
+     * recognize these parameters. Instead, parameters such as 'PeriodStartDate' must be used in the query under the
+     * GIVEN clause, e.g. GIVEN PeriodStartDate = :PeriodStartDate
+     *
+     * @return A string of report parameters formatted for the "GSQL" command class.
+     */
+    @Override
+    protected String getReportParameters() {
+        return Stream
+                .of(formatParameter("--Portfolio", argumentProvider.getPortfolioList()),
+                        formatParameter("--PeriodStartDate", argumentProvider.getPeriodStartDate()),
+                        formatParameter("--PeriodEndDate", argumentProvider.getPeriodEndDate()),
+                        formatParameter("--KnowledgeDate", argumentProvider.getKnowledgeDate()),
+                        formatParameter("--PriorKnowledgeDate", argumentProvider.getPriorKnowledgeDate()),
+                        formatAccountingRunType(), formatReportConsolidation(), formatExtraFlags())
+                .filter(Objects::nonNull).collect(Collectors.joining(" "));
     }
 
     @Override
