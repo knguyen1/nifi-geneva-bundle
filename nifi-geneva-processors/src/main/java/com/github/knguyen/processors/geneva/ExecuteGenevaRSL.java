@@ -26,9 +26,14 @@ import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.util.StandardValidators;
 
+import com.github.knguyen.processors.geneva.argument.StandardRunrepArgumentProvider;
+import com.github.knguyen.processors.geneva.command.ICommand;
+import com.github.knguyen.processors.geneva.command.RSLCommand;
+
 public class ExecuteGenevaRSL extends BaseExecuteGeneva {
 
-    static final PropertyDescriptor RSL_NAME = new PropertyDescriptor.Builder().name("rsl-name").displayName("RSL Name")
+    public static final PropertyDescriptor RSL_NAME = new PropertyDescriptor.Builder().name("rsl-name")
+            .displayName("RSL Name")
             .description(
                     "Specifies the RSL name.  The '.rsl' (dot rsl) extension is not necessary, e.g. `glmap_netassets` for Statement of Net Assets.")
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(true)
@@ -43,7 +48,8 @@ public class ExecuteGenevaRSL extends BaseExecuteGeneva {
     protected ICommand getCommand(final ProcessSession session, final ProcessContext context, final FlowFile flowfile)
             throws IllegalArgumentException {
         var provider = new StandardRunrepArgumentProvider(session, context, flowfile);
-        provider.validate();
-        return new RSLCommand(provider);
+        final var command = new RSLCommand(provider);
+        command.validate();
+        return command;
     }
 }

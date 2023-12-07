@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.knguyen.processors.geneva;
+package com.github.knguyen.processors.geneva.command;
 
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -23,6 +23,9 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.ProcessContext;
+
+import com.github.knguyen.processors.geneva.BaseExecuteGeneva;
+import com.github.knguyen.processors.geneva.argument.IRunrepArgumentProvider;
 
 public abstract class RunrepCommand implements ICommand {
 
@@ -148,16 +151,39 @@ public abstract class RunrepCommand implements ICommand {
     }
 
     /**
-     * Formats a parameter name and its value into a string if the value is set and not blank.
+     * Formats a parameter name and its value into a string, enclosing the value in quotes if it contains unescaped
+     * spaces.
      *
-     * This method takes a parameter name and its value as inputs. If the parameter value is not blank, it returns a
-     * string in the form of "{paramName} {paramValue}". If the parameter value is blank, the function returns null.
+     * This method takes a parameter name and its value as inputs. If the parameter value is not blank (not null, empty,
+     * or whitespace), the method trims the value. It then checks for unescaped spaces in the value. If unescaped spaces
+     * are present, the value is enclosed in quotes. If the spaces are already escaped, the value is returned as is with
+     * the parameter name. The method returns a string in the format "{paramName} {paramValue}" or "{paramName}
+     * "{paramValue}"" if the value contains unescaped spaces. If the parameter value is blank, the function returns
+     * null.
      *
-     * @return A formatted string of the parameter name and its value, or null if the value is blank.
+     * @param paramName
+     *            The name of the parameter.
+     * @param paramValue
+     *            The value of the parameter to be formatted.
+     *
+     * @return A formatted string of the parameter name and its value, enclosed in quotes if it contains unescaped
+     *         spaces, or as is if the space is escaped, or null if the value is blank.
      */
     protected String formatParameter(final String paramName, final String paramValue) {
-        return org.apache.nifi.util.StringUtils.isNotBlank(paramValue) ? String.format("%s %s", paramName, paramValue)
-                : null;
+        if (org.apache.nifi.util.StringUtils.isNotBlank(paramValue)) {
+            // Trim the parameter value
+            String trimmedValue = paramValue.trim();
+
+            // Check if the trimmed value contains unescaped spaces and needs to be quoted
+            if (trimmedValue.contains(" ") && !trimmedValue.contains("\\ ")) {
+                return String.format("%s \"%s\"", paramName, trimmedValue);
+            } else {
+                return String.format("%s %s", paramName, trimmedValue);
+            }
+        } else {
+            // Return null if the parameter value is blank
+            return null;
+        }
     }
 
     /**
@@ -233,5 +259,10 @@ public abstract class RunrepCommand implements ICommand {
     @Override
     public String getOutputResource() {
         return this.outputResource;
+    }
+
+    @Override
+    public void validate() {
+        argumentProvider.validate();
     }
 }

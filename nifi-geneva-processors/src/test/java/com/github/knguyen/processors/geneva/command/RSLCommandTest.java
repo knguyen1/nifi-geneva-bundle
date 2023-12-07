@@ -14,49 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.knguyen.processors.geneva;
+package com.github.knguyen.processors.geneva.command;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+
+import com.github.knguyen.processors.geneva.BaseExecuteGeneva;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 import org.apache.nifi.util.StringUtils;
 
-class RSLCommandTest {
-    @Mock
-    private IRunrepArgumentProvider runrepArgumentProviderMock;
+class RSLCommandTest extends BaseCommandTest {
 
     private RSLCommand rslCommand;
 
+    @Override
     @BeforeEach
     void setup() {
-        MockitoAnnotations.openMocks(this);
+        super.setup();
 
-        when(runrepArgumentProviderMock.getGenevaUser()).thenReturn("usr");
-        when(runrepArgumentProviderMock.getGenevaPassword()).thenReturn("pw");
-        when(runrepArgumentProviderMock.getGenevaAga()).thenReturn("9999");
+        // Add specific mock behaviors for FirstTestClass
         when(runrepArgumentProviderMock.getOutputFilename())
                 .thenReturn("/usr/advent/geneva-20.0.0/share/rslspecs/my-report.csv");
-        when(runrepArgumentProviderMock.getOutputDirectory()).thenReturn("/usr/advent/geneva-20.0.0/share/rslspecs");
         when(runrepArgumentProviderMock.getOutputPath())
                 .thenReturn("/usr/advent/geneva-20.0.0/share/rslspecs/my-report.csv");
-        when(runrepArgumentProviderMock.getPortfolioList()).thenReturn("123,456,789");
-        when(runrepArgumentProviderMock.getPeriodStartDate()).thenReturn("2023-01-01T00:00:00");
-        when(runrepArgumentProviderMock.getPeriodEndDate()).thenReturn("2023-01-31T00:00:00");
-        when(runrepArgumentProviderMock.getKnowledgeDate()).thenReturn("2023-02-01T23:59:59");
-        when(runrepArgumentProviderMock.getPriorKnowledgeDate()).thenReturn("2022-12-01T12:34:56");
-        when(runrepArgumentProviderMock.getAccountingRunType())
-                .thenReturn(BaseExecuteGeneva.DYNAMIC_ACCOUNTING.getValue());
-        when(runrepArgumentProviderMock.getReportConsolidation())
-                .thenReturn(BaseExecuteGeneva.NONE_CONSOLIDATED.getValue());
-        when(runrepArgumentProviderMock.getExtraFlags()).thenReturn(org.apache.nifi.util.StringUtils.EMPTY);
         when(runrepArgumentProviderMock.getRSLName()).thenReturn("my_positions.rsl");
         when(runrepArgumentProviderMock.getFileExtension()).thenReturn(".csv");
         when(runrepArgumentProviderMock.getOutputFormat()).thenReturn("csv");
@@ -150,7 +136,7 @@ class RSLCommandTest {
     @ValueSource(strings = {
         "123",
         "123,456",
-        "123,\\\"My Portfolio\\\",456"
+        "123,My Portfolio,456"
     })
     void testPortfolioOverrides(final String portfolio) {
         when(runrepArgumentProviderMock.getPortfolioList()).thenReturn(portfolio);
@@ -162,7 +148,7 @@ class RSLCommandTest {
                 "read \"my_positions.rsl\"\n" + //
                 "runfile \"my_positions\" -f csv -o \"/usr/advent/geneva-20.0.0/share/rslspecs/my-report.csv\" -p %s -ps 2023-01-01T00:00:00 -pe 2023-01-31T00:00:00 -k 2023-02-01T23:59:59 -pk 2022-12-01T12:34:56\n" + //
                 "exit\n" + //
-                "EOF\n", portfolio), commandStr);
+                "EOF\n", portfolio.contains(" ") ? String.format("\"%s\"", portfolio) : portfolio), commandStr);
     }
 
     @ParameterizedTest

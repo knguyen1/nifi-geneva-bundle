@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.knguyen.processors.geneva;
+package com.github.knguyen.processors.geneva.argument;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -26,6 +26,11 @@ import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.stream.io.StreamUtils;
 import org.apache.nifi.util.StringUtils;
+
+import com.github.knguyen.processors.geneva.BaseExecuteGeneva;
+import com.github.knguyen.processors.geneva.ExecuteGenevaGSQL;
+import com.github.knguyen.processors.geneva.ExecuteGenevaRSL;
+import com.github.knguyen.processors.geneva.ExecuteGenevaStoredQuery;
 
 /**
  * The {@code StandardRunrepArgumentProvider} class implements the {@code IRunrepArgumentProvider} interface, providing
@@ -472,10 +477,21 @@ public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
     }
 
     @Override
+    public String getRunCommandTarget() {
+        return context.getProperty(ExecuteGenevaStoredQuery.RUN_COMMAND_TARGET).evaluateAttributeExpressions(flowfile)
+                .getValue();
+    }
+
+    @Override
+    public String getRunCommandName() {
+        return context.getProperty(ExecuteGenevaStoredQuery.RUN_COMMAND_NAME).evaluateAttributeExpressions(flowfile)
+                .getValue();
+    }
+
+    @Override
     public void validate() throws IllegalArgumentException {
         validateUserCredentials();
         // validateOutputPath(); // does not work during unit tests
-        validatePortfolioList();
         validateDateLogic();
         // validateGSQLQuery(); // not required, we shouldn't validate this as this won't fit all use-cases
     }
@@ -513,21 +529,6 @@ public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
         }
     }
 
-    protected void validatePortfolioList() {
-        // Validate portfolio list
-        if (StringUtils.isNotBlank(getPortfolioList())) {
-            String[] portfolios = getPortfolioList().split(",");
-            for (String portfolio : portfolios) {
-                portfolio = portfolio.trim();
-                if (portfolio.contains(" ") && !(portfolio.startsWith("\\\"") && portfolio.endsWith("\\\""))) {
-                    throw new IllegalArgumentException(String.format(
-                            "Portfolio argument `%s` contains space that was not propertly escaped, e.g. `123,\\\"My Portfolio\\\",456`.",
-                            getPortfolioList()));
-                }
-            }
-        }
-    }
-
     protected void validateDateLogic() {
         // Date validations
         final LocalDateTime periodStartDate = validateDateArgument(getPeriodStartDate(),
@@ -545,6 +546,14 @@ public class StandardRunrepArgumentProvider implements IRunrepArgumentProvider {
                 throw new IllegalArgumentException(
                         String.format("`periodStartDate` (%s) must be greater than or equal to `periodEndDate` (%s).",
                                 periodStartDate, periodEndDate));
+            }
+        }
+
+        if (knowledgeDate != null && priorKnowledgeDate != null) {
+            if (priorKnowledgeDate.isAfter(knowledgeDate)) {
+                throw new IllegalArgumentException(String.format(
+                        "`knowledgeDate` (%s) must be greater than or equal to `priorKnowledgeDate` (%s).",
+                        periodStartDate, periodEndDate));
             }
         }
 

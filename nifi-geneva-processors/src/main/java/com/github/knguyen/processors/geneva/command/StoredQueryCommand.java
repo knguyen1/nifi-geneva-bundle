@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.knguyen.processors.geneva;
+package com.github.knguyen.processors.geneva.command;
 
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.nifi.util.StringUtils;
+import com.github.knguyen.processors.geneva.argument.IRunrepArgumentProvider;
 
-public class GSQLCommand extends RunrepCommand {
-    public GSQLCommand(IRunrepArgumentProvider argumentProvider) {
+public class StoredQueryCommand extends RunrepCommand {
+    public StoredQueryCommand(IRunrepArgumentProvider argumentProvider) {
         super(argumentProvider);
     }
 
@@ -36,15 +36,14 @@ public class GSQLCommand extends RunrepCommand {
         final String outputFilename = getOuputFilename();
         final String reportParameters = getReportParameters();
 
-        // get the gsql query
-        final String gsqlQuery = argumentProvider.getGSQLQuery();
+        final String runCommandName = argumentProvider.getRunCommandName();
+        final String runCommandTarget = argumentProvider.getRunCommandTarget();
 
-        if (StringUtils.isNotBlank(reportParameters)) {
-            return String.format("rungsql -f %s -o \"%s\" %s%n%s", outputFormat, outputFilename, reportParameters,
-                    gsqlQuery);
-        } else {
-            return String.format("rungsql -f %s -o \"%s\"%n%s", outputFormat, outputFilename, gsqlQuery);
-        }
+        String finalCommand = String.format("%s \"%s\" -f %s -o %s %s", runCommandName, runCommandTarget, outputFormat,
+                outputFilename, reportParameters);
+        finalCommand = finalCommand.trim();
+
+        return finalCommand;
     }
 
     /**

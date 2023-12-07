@@ -34,6 +34,7 @@ import org.apache.nifi.processors.standard.util.FTPTransfer;
 import org.apache.nifi.processors.standard.util.FileTransfer;
 import org.apache.nifi.processors.standard.util.SFTPTransfer;
 
+import com.github.knguyen.processors.geneva.command.ICommand;
 import com.github.knguyen.processors.ssh.SSHCommandExecutorProvider;
 import com.github.knguyen.processors.utils.CustomValidators;
 
@@ -65,121 +66,123 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
         this.executorProvider = commandExecutorProvider;
     }
 
-    static final AllowableValue USERNAME_PASSWORD_STRATEGY = new AllowableValue("password-authentication",
+    public static final AllowableValue USERNAME_PASSWORD_STRATEGY = new AllowableValue("password-authentication",
             "Password Authentication",
             "Use username and password for SSH authentication. Be aware that these credentials are generally different from those used for the `runrep` utility.");
-    static final AllowableValue IDENTITY_FILE_STRATEGY = new AllowableValue("identity-file", "Identity File",
+    public static final AllowableValue IDENTITY_FILE_STRATEGY = new AllowableValue("identity-file", "Identity File",
             "Use an identity file to log in to SSH.  The file should be accessible by your NiFi installation and have appropriate permissions.  The identify file is assumed to be password-less and in RSA format, where applicable.");
 
-    static final PropertyDescriptor HOSTNAME = new PropertyDescriptor.Builder()
+    public static final PropertyDescriptor HOSTNAME = new PropertyDescriptor.Builder()
             .fromPropertyDescriptor(FileTransfer.HOSTNAME)
             .description(
                     "SSH Host for Runrep Utility: This refers to the SSH host where the Geneva runrep utility is located. In most configurations, this is the same server that hosts your Geneva AGA. You should specify this as a hostname or IP address.")
             .addValidator(CustomValidators.HOSTNAME_VALIDATOR).build();
 
-    static final PropertyDescriptor PORT = new PropertyDescriptor.Builder().fromPropertyDescriptor(SFTPTransfer.PORT)
+    public static final PropertyDescriptor PORT = new PropertyDescriptor.Builder()
+            .fromPropertyDescriptor(SFTPTransfer.PORT)
             .description(
                     "The port on the server to connect to; default is 22. This value is not the same as your Geneva AGA.")
             .build();
 
-    static final PropertyDescriptor SSH_AUTHENTICATION_STRATEGY = new PropertyDescriptor.Builder()
+    public static final PropertyDescriptor SSH_AUTHENTICATION_STRATEGY = new PropertyDescriptor.Builder()
             .name("ssh-authentication-strategy").displayName("SSH Authentication Strategy")
             .description("Specifies the method of authentication for the SSH connection.")
             .allowableValues(USERNAME_PASSWORD_STRATEGY, IDENTITY_FILE_STRATEGY)
             .defaultValue(USERNAME_PASSWORD_STRATEGY.getValue()).addValidator(Validator.VALID).required(true).build();
 
-    static final PropertyDescriptor USERNAME = new PropertyDescriptor.Builder()
+    public static final PropertyDescriptor USERNAME = new PropertyDescriptor.Builder()
             .fromPropertyDescriptor(FileTransfer.USERNAME).description("The username on the host to connect as.")
             .build();
 
-    static final PropertyDescriptor PASSWORD = new PropertyDescriptor.Builder()
+    public static final PropertyDescriptor PASSWORD = new PropertyDescriptor.Builder()
             .fromPropertyDescriptor(FileTransfer.PASSWORD)
             .description(
                     "The password to connect to the host.  This property is ignored if `Identify File` is chosen as the authentication strategy.")
             .dependsOn(SSH_AUTHENTICATION_STRATEGY, USERNAME_PASSWORD_STRATEGY).build();
 
-    static final PropertyDescriptor PRIVATE_KEY_PATH = new PropertyDescriptor.Builder()
+    public static final PropertyDescriptor PRIVATE_KEY_PATH = new PropertyDescriptor.Builder()
             .fromPropertyDescriptor(SFTPTransfer.PRIVATE_KEY_PATH)
             .description(
                     "The path to the SSH identity file.  Must be accessible by NiFi and have appropriate permissions.  This property is ignored if `Password Authentication` is chosen as the authentication strategy.")
             .dependsOn(SSH_AUTHENTICATION_STRATEGY, IDENTITY_FILE_STRATEGY)
             .addValidator(StandardValidators.FILE_EXISTS_VALIDATOR).build();
 
-    static final PropertyDescriptor PRIVATE_KEY_PASSPHRASE = new PropertyDescriptor.Builder()
+    public static final PropertyDescriptor PRIVATE_KEY_PASSPHRASE = new PropertyDescriptor.Builder()
             .fromPropertyDescriptor(SFTPTransfer.PRIVATE_KEY_PASSPHRASE)
             .dependsOn(SSH_AUTHENTICATION_STRATEGY, IDENTITY_FILE_STRATEGY)
             .description(
                     "Password for the private key.  This property is ignored if `Password Authentication` is chosen as the authentication strategy.")
             .build();
 
-    static final PropertyDescriptor DATA_TIMEOUT = new PropertyDescriptor.Builder()
+    public static final PropertyDescriptor DATA_TIMEOUT = new PropertyDescriptor.Builder()
             .fromPropertyDescriptor(FileTransfer.DATA_TIMEOUT)
             .description(
                     "Specifies the timeout duration for data transmission during command execution, like `runrep` or `rungsql`.  If you have large RSL reports or accounting runs, you should set this value to a long duration.")
             .defaultValue("5 mins").build();
 
-    static final PropertyDescriptor RUNREP_USERNAME = new PropertyDescriptor.Builder().name("runrep-username")
+    public static final PropertyDescriptor RUNREP_USERNAME = new PropertyDescriptor.Builder().name("runrep-username")
             .displayName("Runrep Username").description("The username used to authenticate with runrep.").required(true)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
             .addValidator(StandardValidators.NON_BLANK_VALIDATOR).build();
 
-    static final PropertyDescriptor RUNREP_PASSWORD = new PropertyDescriptor.Builder().name("runrep-password")
+    public static final PropertyDescriptor RUNREP_PASSWORD = new PropertyDescriptor.Builder().name("runrep-password")
             .displayName("Runrep Password").description("The password used to authenticate with runrep.").required(true)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).sensitive(true)
             .addValidator(StandardValidators.NON_BLANK_VALIDATOR).build();
 
-    static final PropertyDescriptor GENEVA_AGA = new PropertyDescriptor.Builder().name("geneva-aga")
+    public static final PropertyDescriptor GENEVA_AGA = new PropertyDescriptor.Builder().name("geneva-aga")
             .displayName("Geneva AGA").description("Specifies the Geneva AGA (the port number) you want to target.")
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).sensitive(false).required(false)
             .addValidator(StandardValidators.PORT_VALIDATOR).build();
 
-    static final AllowableValue OUTPUT_ASCII = new AllowableValue("ascii", "ASCII",
+    public static final AllowableValue OUTPUT_ASCII = new AllowableValue("ascii", "ASCII",
             "ASCII text with report run identifier. Default option if no other format is specified.");
-    static final AllowableValue OUTPUT_ASCII_NOID = new AllowableValue("asciinoid", "ASCII No ID",
+    public static final AllowableValue OUTPUT_ASCII_NOID = new AllowableValue("asciinoid", "ASCII No ID",
             "ASCII text without report run identifier.");
-    static final AllowableValue OUTPUT_ASCII_NOHEADER = new AllowableValue("asciinoheader", "ASCII No Header",
+    public static final AllowableValue OUTPUT_ASCII_NOHEADER = new AllowableValue("asciinoheader", "ASCII No Header",
             "ASCII text without report header or report run identifier.");
-    static final AllowableValue OUTPUT_BCP = new AllowableValue("bcp", "BCP",
+    public static final AllowableValue OUTPUT_BCP = new AllowableValue("bcp", "BCP",
             "Pipe (|) delimited flat file records ready for loading into another database.");
-    static final AllowableValue OUTPUT_BCP_ID = new AllowableValue("bcpid", "BCP ID",
+    public static final AllowableValue OUTPUT_BCP_ID = new AllowableValue("bcpid", "BCP ID",
             "Pipe (|) delimited flat file records with report run identifiers appended to each record.");
-    static final AllowableValue OUTPUT_BCP_NOSPACE = new AllowableValue("bcpnospace", "BCP No Space",
+    public static final AllowableValue OUTPUT_BCP_NOSPACE = new AllowableValue("bcpnospace", "BCP No Space",
             "Pipe (|) delimited flat file records that replace spaces in the report output with underscores (_).");
-    static final AllowableValue OUTPUT_COLUMNAR = new AllowableValue("col", "Columnar",
+    public static final AllowableValue OUTPUT_COLUMNAR = new AllowableValue("col", "Columnar",
             "(For runquery only) Columnar flat file records.");
-    static final AllowableValue OUTPUT_CSV = new AllowableValue("csv", "CSV",
+    public static final AllowableValue OUTPUT_CSV = new AllowableValue("csv", "CSV",
             "Comma-delimited flat file records without run identifier.");
-    static final AllowableValue OUTPUT_CSV_NOSPACE = new AllowableValue("csvnospace", "CSV No Space",
+    public static final AllowableValue OUTPUT_CSV_NOSPACE = new AllowableValue("csvnospace", "CSV No Space",
             "Comma-delimited flat file records without run identifiers, that replace spaces in the report output with underscores (_).");
-    static final AllowableValue OUTPUT_JSON = new AllowableValue("json", "JSON", "JavaScript Object Notation format");
-    static final AllowableValue OUTPUT_PDF = new AllowableValue("pdf", "PDF",
+    public static final AllowableValue OUTPUT_JSON = new AllowableValue("json", "JSON",
+            "JavaScript Object Notation format");
+    public static final AllowableValue OUTPUT_PDF = new AllowableValue("pdf", "PDF",
             "Adobe Portable Document Format. For information about including an image from a graphics file in the report, see “Including Images in PDF Reports” on page 179.");
-    static final AllowableValue OUTPUT_PDF_NOID = new AllowableValue("pdfnoid", "PDF No ID",
+    public static final AllowableValue OUTPUT_PDF_NOID = new AllowableValue("pdfnoid", "PDF No ID",
             "Adobe Portable Document Format files without report run identifiers.");
-    static final AllowableValue OUTPUT_RMF = new AllowableValue("rmf", "RMF", "Report metafile (GenPAV).");
-    static final AllowableValue OUTPUT_TSV = new AllowableValue("tsv", "TSV", "Tab-separated values format.");
-    static final AllowableValue OUTPUT_XML = new AllowableValue("xml", "XML",
+    public static final AllowableValue OUTPUT_RMF = new AllowableValue("rmf", "RMF", "Report metafile (GenPAV).");
+    public static final AllowableValue OUTPUT_TSV = new AllowableValue("tsv", "TSV", "Tab-separated values format.");
+    public static final AllowableValue OUTPUT_XML = new AllowableValue("xml", "XML",
             "A single XML file, <report>.xml, that contains all report output, as well as report arguments and addendum errors.");
-    static final AllowableValue OUTPUT_XML_ERROR = new AllowableValue("xmlerr", "XML Error",
+    public static final AllowableValue OUTPUT_XML_ERROR = new AllowableValue("xmlerr", "XML Error",
             "A <report>.xml file, that contains all report output; <report>.err, that contains the report’s addendum errors; and <report>.arg, that contains the report’s arguments.");
 
-    static final PropertyDescriptor REPORT_OUTPUT_FORMAT = new PropertyDescriptor.Builder().name("report-output-format")
-            .displayName("Report Output Format").description("Defines the output format of the report.").required(true)
-            .defaultValue(OUTPUT_CSV.getValue())
+    public static final PropertyDescriptor REPORT_OUTPUT_FORMAT = new PropertyDescriptor.Builder()
+            .name("report-output-format").displayName("Report Output Format")
+            .description("Defines the output format of the report.").required(true).defaultValue(OUTPUT_CSV.getValue())
             .allowableValues(OUTPUT_ASCII, OUTPUT_ASCII_NOID, OUTPUT_ASCII_NOHEADER, OUTPUT_BCP, OUTPUT_BCP_ID,
                     OUTPUT_BCP_NOSPACE, OUTPUT_COLUMNAR, OUTPUT_CSV, OUTPUT_CSV_NOSPACE, OUTPUT_JSON, OUTPUT_PDF,
                     OUTPUT_PDF_NOID, OUTPUT_RMF, OUTPUT_TSV, OUTPUT_XML, OUTPUT_XML_ERROR)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).addValidator(Validator.VALID)
             .build();
 
-    static final PropertyDescriptor REPORT_OUTPUT_PATH = new PropertyDescriptor.Builder().name("report-output-path")
-            .displayName("Report Output Path")
+    public static final PropertyDescriptor REPORT_OUTPUT_PATH = new PropertyDescriptor.Builder()
+            .name("report-output-path").displayName("Report Output Path")
             .description(
                     "Specifies the absolute, fully-qualified path for the report output, which corresponds to the `-o` option for `runrep`. The path should be accessible and writable by `runrep`. When this property is set, the `Report Output Directory` property is ignored. If this property is not set, NiFi will use the `Report Output Directory` value and generate a filename matching the FlowFile's `UUID`.  Keep in mind that by using this property, you effectively set a constant filepath for writing reports.  This means that successive executions of flowfiles in the same given pipeline will overwrite any existing reports at this locatio.  This could be desirable for certain scenarios, such as when using processing pipelines external to NiFi that require data at a fixed location.")
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).sensitive(false).required(false)
             .addValidator(Validator.VALID).build();
 
-    static final PropertyDescriptor REPORT_OUTPUT_DIRECTORY = new PropertyDescriptor.Builder()
+    public static final PropertyDescriptor REPORT_OUTPUT_DIRECTORY = new PropertyDescriptor.Builder()
             .name("report-output-directory").displayName("Report Output Directory")
             .description(
                     "Defines the directory for storing report files. This directory stores reports for NiFi processing. System administrators should regularly manage and clear this space for smooth operation, although processors in this bundle will make attempts to dispose any un-managed resources.  This value defaults to the system-dependent 'temporary path' value.")
@@ -187,51 +190,49 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             .addValidator(StandardValidators.createDirectoryExistsValidator(true, true))
             .defaultValue(System.getProperty("java.io.tmpdir")).build();
 
-    static final PropertyDescriptor PORTFOLIO_LIST = new PropertyDescriptor.Builder().name("portfolio")
-            .displayName("Portfolio List")
-            .description(
-                    "Specifies portfolios as a comma-separated list. Enclose names containing spaces in escaped quotes, e.g., `MyPortfolio1,\\\"9000 International Fixed Income\\\",MyOtherPortfolio`.")
+    public static final PropertyDescriptor PORTFOLIO_LIST = new PropertyDescriptor.Builder().name("portfolio")
+            .displayName("Portfolio List").description("Specifies portfolios as a comma-separated list.")
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false)
             .defaultValue("${geneva.portfolio}").addValidator(CustomValidators.PORTFOLIO_LIST_VALIDATOR).build();
 
-    static final PropertyDescriptor PERIOD_START_DATE = new PropertyDescriptor.Builder().name("periodstartdate")
+    public static final PropertyDescriptor PERIOD_START_DATE = new PropertyDescriptor.Builder().name("periodstartdate")
             .displayName("Period Start Date")
             .description("Specifies the period start date using ISO Date Time Format, i.e. yyyy-MM-dd'T'HH:mm:ss")
             .addValidator(CustomValidators.DATETIME_VALIDATOR)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false)
             .defaultValue("${geneva.periodstartdate}").build();
 
-    static final PropertyDescriptor PERIOD_END_DATE = new PropertyDescriptor.Builder().name("periodenddate")
+    public static final PropertyDescriptor PERIOD_END_DATE = new PropertyDescriptor.Builder().name("periodenddate")
             .displayName("Period End Date")
             .description("Specifies the period end date using ISO Date Time Format, i.e. yyyy-MM-dd'T'HH:mm:ss")
             .addValidator(CustomValidators.DATETIME_VALIDATOR)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false)
             .defaultValue("${geneva.periodenddate}").build();
 
-    static final PropertyDescriptor KNOWLEDGE_DATE = new PropertyDescriptor.Builder().name("knowledgedate")
+    public static final PropertyDescriptor KNOWLEDGE_DATE = new PropertyDescriptor.Builder().name("knowledgedate")
             .displayName("Knowledge Date")
             .description("Specifies the knowledge date using ISO Date Time Format, i.e. yyyy-MM-dd'T'HH:mm:ss")
             .addValidator(CustomValidators.DATETIME_VALIDATOR)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false)
             .defaultValue("${geneva.knowledgedate}").build();
 
-    static final AllowableValue DYNAMIC_ACCOUNTING = new AllowableValue("Dynamic", "Dynamic",
+    public static final AllowableValue DYNAMIC_ACCOUNTING = new AllowableValue("Dynamic", "Dynamic",
             "Dynamic accounting run.  The default mode for most reports.");
-    static final AllowableValue CLOSED_PERIOD_ACCOUNTING = new AllowableValue("ClosedPeriod", "ClosedPeriod",
+    public static final AllowableValue CLOSED_PERIOD_ACCOUNTING = new AllowableValue("ClosedPeriod", "ClosedPeriod",
             "Signifies that we should run this report under `ClosedPeriod` accounting.  PNL's and accruals are treated differently under this mode.");
 
-    static final AllowableValue UNAMENDED_CLOSED_PERIOD_ACCOUNTING = new AllowableValue("UnAmendedClosedPeriod",
+    public static final AllowableValue UNAMENDED_CLOSED_PERIOD_ACCOUNTING = new AllowableValue("UnAmendedClosedPeriod",
             "UnAmendedClosedPeriod", "UnAmendedClosedPeriod accounting run.");
-    static final AllowableValue INCREMENTAL_ACCOUNTING = new AllowableValue("Incremental", "Incremental",
+    public static final AllowableValue INCREMENTAL_ACCOUNTING = new AllowableValue("Incremental", "Incremental",
             "Incremental accounting run.");
-    static final AllowableValue NAV_ACCOUNTING = new AllowableValue("NAV", "NAV", "NAV accounting run.");
-    static final AllowableValue WOULD_BE_ADJUSTMENTS_ACCOUNTING = new AllowableValue("WouldBeAdjustments",
+    public static final AllowableValue NAV_ACCOUNTING = new AllowableValue("NAV", "NAV", "NAV accounting run.");
+    public static final AllowableValue WOULD_BE_ADJUSTMENTS_ACCOUNTING = new AllowableValue("WouldBeAdjustments",
             "WouldBeAdjustments", "WouldBeAdjustments accounting run.");
-    static final AllowableValue TWR_ACCOUNTING = new AllowableValue("TWR", "TWR", "TWR accounting run.");
-    static final AllowableValue SNAPSHOT_ACCOUNTING = new AllowableValue("Snapshot", "Snapshot",
+    public static final AllowableValue TWR_ACCOUNTING = new AllowableValue("TWR", "TWR", "TWR accounting run.");
+    public static final AllowableValue SNAPSHOT_ACCOUNTING = new AllowableValue("Snapshot", "Snapshot",
             "Snapshot accounting run.");
 
-    static final PropertyDescriptor ACCOUNTING_RUN_TYPE = new PropertyDescriptor.Builder().name("-at")
+    public static final PropertyDescriptor ACCOUNTING_RUN_TYPE = new PropertyDescriptor.Builder().name("-at")
             .displayName("Accounting Run Type")
             .description(
                     "The type of accounting run that the report performs.  If you do not use this option, it defaults to dynamic accounting.  For reports that cannot use dynamic accounting, however, such as the Fund category reports, and the Transactions Excluded Due to Freezepoint and Transactions Modified After Freezepoint reports, you must use this option to specify a valid accouting type.")
@@ -242,15 +243,15 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             .defaultValue(DYNAMIC_ACCOUNTING.getValue())
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).build();
 
-    static final PropertyDescriptor PRIOR_KNOWLEDGE_DATE = new PropertyDescriptor.Builder().name("PriorKnowledgeDate")
-            .displayName("Prior Knowledge Date")
+    public static final PropertyDescriptor PRIOR_KNOWLEDGE_DATE = new PropertyDescriptor.Builder()
+            .name("PriorKnowledgeDate").displayName("Prior Knowledge Date")
             .description("Specifies the prior knowledge date using ISO Date Time Format, i.e. yyyy-MM-dd'T'HH:mm:ss")
             .addValidator(CustomValidators.DATETIME_VALIDATOR)
             .dependsOn(ACCOUNTING_RUN_TYPE, CLOSED_PERIOD_ACCOUNTING, INCREMENTAL_ACCOUNTING)
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES).required(false)
             .defaultValue("${geneva.priorknowledgedate}").build();
 
-    static final PropertyDescriptor EXTRA_FLAGS = new PropertyDescriptor.Builder().displayName("Extra Flags")
+    public static final PropertyDescriptor EXTRA_FLAGS = new PropertyDescriptor.Builder().displayName("Extra Flags")
             .name("extra-flags")
             .description(
                     "Use this field to specify any other flags.  You are responsible for correctly escaping any fields with special characters and spaces.  The arguments specified here will be presented as-is during a report run.")
@@ -258,13 +259,14 @@ public abstract class BaseExecuteGeneva extends AbstractProcessor {
             .expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
             .defaultValue("${geneva.extraflags}").build();
 
-    static final AllowableValue CONSOLIDATE_ALL = new AllowableValue("-c1", "All", "Produces one consolidated report");
-    static final AllowableValue GROUP_CONSOLIDATE = new AllowableValue("-c2", "GroupsOnly",
+    public static final AllowableValue CONSOLIDATE_ALL = new AllowableValue("-c1", "All",
+            "Produces one consolidated report");
+    public static final AllowableValue GROUP_CONSOLIDATE = new AllowableValue("-c2", "GroupsOnly",
             "Produces reports consolidated on portfolio and accounting parameters groups.");
-    static final AllowableValue NONE_CONSOLIDATED = new AllowableValue("-c3", "None",
+    public static final AllowableValue NONE_CONSOLIDATED = new AllowableValue("-c3", "None",
             "Does not produce consolidated reports (the default).");
 
-    static final PropertyDescriptor REPORT_CONSOLIDATION = new PropertyDescriptor.Builder()
+    public static final PropertyDescriptor REPORT_CONSOLIDATION = new PropertyDescriptor.Builder()
             .name("consolidation-preference").displayName("Consolidate")
             .description(
                     "How to consolidate the report: All for consolidated reports, GroupsOnly for group consolidated reports, and None for iterated reports with no consolidation (the default).")

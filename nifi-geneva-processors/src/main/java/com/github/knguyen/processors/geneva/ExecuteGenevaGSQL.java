@@ -28,8 +28,12 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
 
+import com.github.knguyen.processors.geneva.argument.StandardRunrepArgumentProvider;
+import com.github.knguyen.processors.geneva.command.GSQLCommand;
+import com.github.knguyen.processors.geneva.command.ICommand;
+
 public class ExecuteGenevaGSQL extends BaseExecuteGeneva {
-    static final PropertyDescriptor GENEVA_SQL_QUERY = new PropertyDescriptor.Builder().name("geneva-sql-query")
+    public static final PropertyDescriptor GENEVA_SQL_QUERY = new PropertyDescriptor.Builder().name("geneva-sql-query")
             .displayName("Geneva SQL Query")
             .description(
                     "The SQL select query to execute. The query can be empty, a constant value, or built from attributes "
@@ -59,8 +63,9 @@ public class ExecuteGenevaGSQL extends BaseExecuteGeneva {
     @Override
     protected ICommand getCommand(final ProcessSession session, final ProcessContext context, final FlowFile flowfile)
             throws IllegalArgumentException {
-        var provider = new StandardRunrepArgumentProvider(session, context, flowfile);
-        provider.validate();
-        return new GSQLCommand(provider);
+        final var provider = new StandardRunrepArgumentProvider(session, context, flowfile);
+        final var command = new GSQLCommand(provider);
+        command.validate();
+        return command;
     }
 }

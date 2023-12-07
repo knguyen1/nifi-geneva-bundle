@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.knguyen.processors.geneva;
+package com.github.knguyen.processors.geneva.argument;
 
 /**
  * Interface IRunrepArgumentProvider defines a contract for providing arguments needed by the RunrepCommand.
@@ -96,6 +96,10 @@ public interface IRunrepArgumentProvider {
      * @return A {@code String} representing the GSQL query.
      */
     String getGSQLQuery();
+
+    String getRunCommandName();
+
+    String getRunCommandTarget();
 
     /**
      * Validates the provided arguments for the Runrep command.

@@ -40,9 +40,9 @@ import org.apache.nifi.util.StringUtils;
 import org.apache.nifi.util.file.FileUtils;
 
 import com.github.knguyen.processors.geneva.GenevaException;
-import com.github.knguyen.processors.geneva.ICommand;
 import com.github.knguyen.processors.geneva.IStreamHandler;
 import com.github.knguyen.processors.geneva.RemoteCommandExecutor;
+import com.github.knguyen.processors.geneva.command.ICommand;
 
 import net.schmizz.sshj.SSHClient;
 import net.schmizz.sshj.connection.channel.direct.Session;

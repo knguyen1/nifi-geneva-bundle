@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.knguyen.processors.geneva;
+package com.github.knguyen.processors.geneva.command;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -121,5 +121,11 @@ public class Command implements ICommand {
 
         // Return null if no match is found
         return null;
+    }
+
+    @Override
+    public void validate() {
+        if (StringUtils.isBlank(commandToExecute))
+            throw new IllegalArgumentException("`commandToExecute` cannot be blank");
     }
 }

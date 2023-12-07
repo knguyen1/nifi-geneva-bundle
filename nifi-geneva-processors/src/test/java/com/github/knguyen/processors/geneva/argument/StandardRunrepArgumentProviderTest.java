@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.knguyen.processors.geneva;
+package com.github.knguyen.processors.geneva.argument;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
@@ -33,6 +33,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+
+import com.github.knguyen.processors.geneva.BaseExecuteGeneva;
 
 class StandardRunrepArgumentProviderTest {
 
@@ -104,31 +106,6 @@ class StandardRunrepArgumentProviderTest {
     @Test
     void testValidUsernamePasswordDoesNotThrow() {
         Assertions.assertDoesNotThrow(() -> provider.validateUserCredentials());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "123,456", "123", "123,\\\"My Portfolio\\\",456", "123-abc,456-distressed" })
-    void testValidatePassesValidPortfolios(String portfolioList) {
-        // Mocking a valid portfolio list
-        final var propertyValue1 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PORTFOLIO_LIST)).thenReturn(propertyValue1);
-        when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
-        when(propertyValue1.getValue()).thenReturn(portfolioList);
-
-        Assertions.assertDoesNotThrow(() -> provider.validatePortfolioList());
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "123,My Portfolio,456", "123,\\\"My Portfolio,456", "123,My Portfolio\\\",456",
-            "\\\"123,My Portfolio,456\\\"" })
-    void testValidateFailsInvalidMultiplePortfolios(String portfolioList) {
-        // Mocking a valid portfolio list
-        final var propertyValue1 = Mockito.mock(PropertyValue.class);
-        when(context.getProperty(BaseExecuteGeneva.PORTFOLIO_LIST)).thenReturn(propertyValue1);
-        when(propertyValue1.evaluateAttributeExpressions(flowfile)).thenReturn(propertyValue1);
-        when(propertyValue1.getValue()).thenReturn(portfolioList);
-
-        Assertions.assertThrows(IllegalArgumentException.class, () -> provider.validatePortfolioList());
     }
 
     @Test

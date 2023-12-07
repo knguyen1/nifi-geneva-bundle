@@ -14,44 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.knguyen.processors.geneva;
+package com.github.knguyen.processors.geneva.command;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-class GSQLCommandTest {
-    @Mock
-    private IRunrepArgumentProvider runrepArgumentProviderMock;
-
+class GSQLCommandTest extends BaseCommandTest {
     private GSQLCommand gsqlCommand;
 
     @BeforeEach
+    @Override
     void setup() {
-        MockitoAnnotations.openMocks(this);
+        super.setup();
 
-        when(runrepArgumentProviderMock.getGenevaUser()).thenReturn("usr");
-        when(runrepArgumentProviderMock.getGenevaPassword()).thenReturn("pw");
-        when(runrepArgumentProviderMock.getGenevaAga()).thenReturn("9999");
         when(runrepArgumentProviderMock.getOutputFilename())
                 .thenReturn("/usr/advent/geneva-20.0.0/share/rslspecs/my-report.xml");
-        when(runrepArgumentProviderMock.getOutputDirectory()).thenReturn("/usr/advent/geneva-20.0.0/share/rslspecs");
         when(runrepArgumentProviderMock.getOutputPath())
                 .thenReturn("/usr/advent/geneva-20.0.0/share/rslspecs/my-report.xml");
         when(runrepArgumentProviderMock.getPortfolioList()).thenReturn("123-MyPortfolio");
-        when(runrepArgumentProviderMock.getPeriodStartDate()).thenReturn("2023-01-01T00:00:00");
-        when(runrepArgumentProviderMock.getPeriodEndDate()).thenReturn("2023-01-31T00:00:00");
-        when(runrepArgumentProviderMock.getKnowledgeDate()).thenReturn("2023-02-01T23:59:59");
-        when(runrepArgumentProviderMock.getPriorKnowledgeDate()).thenReturn("2022-12-01T12:34:56");
-        when(runrepArgumentProviderMock.getAccountingRunType())
-                .thenReturn(BaseExecuteGeneva.DYNAMIC_ACCOUNTING.getValue());
-        when(runrepArgumentProviderMock.getReportConsolidation())
-                .thenReturn(BaseExecuteGeneva.NONE_CONSOLIDATED.getValue());
-        when(runrepArgumentProviderMock.getExtraFlags()).thenReturn(org.apache.nifi.util.StringUtils.EMPTY);
         when(runrepArgumentProviderMock.getGSQLQuery()).thenReturn("SELECT\n" + //
                 "{ AmortizationPrice(Local,PeriodEnd,\"2013/08/09\") }\n" + //
                 "FROM bisLocalPosition GIVEN Portfolio = :Portfolio,PeriodStartDate = :PeriodStartDate\n" + //
@@ -75,5 +61,32 @@ class GSQLCommandTest {
                 "WHERE { investment.key } == \"Bond252\";\n" + //
                 "exit\n" + //
                 "EOF\n", commandStr);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "foo",
+        "select static1 from foo",
+        ""
+    })
+    void testValidateCommandShouldThrowOnInvalidQuery(final String query) {
+        when(runrepArgumentProviderMock.getGSQLQuery()).thenReturn(query);
+        this.gsqlCommand = new GSQLCommand(runrepArgumentProviderMock);
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> gsqlCommand.validate());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "select investment from bixTaxlot;",
+        "select FundLegalEntity.Code fund_legal_entity_code from PositionsVT\nGIVEN Portfolio = :Portfolio;",
+        "select * from businessunit;",
+        "select * from bisportfolioaccount given Portfolio = \"a\";"
+    })
+    void testValidateQueryShouldNotThrow(final String query) {
+        when(runrepArgumentProviderMock.getGSQLQuery()).thenReturn(query);
+        this.gsqlCommand = new GSQLCommand(runrepArgumentProviderMock);
+
+        Assertions.assertDoesNotThrow(() -> gsqlCommand.validate());
     }
 }

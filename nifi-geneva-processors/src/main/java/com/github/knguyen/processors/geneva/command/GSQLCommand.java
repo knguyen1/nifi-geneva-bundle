@@ -14,36 +14,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.knguyen.processors.geneva;
+package com.github.knguyen.processors.geneva.command;
 
 import org.apache.nifi.util.StringUtils;
 
-public class RSLCommand extends RunrepCommand {
+import com.github.knguyen.processors.geneva.argument.IRunrepArgumentProvider;
 
-    public RSLCommand(final IRunrepArgumentProvider argumentProvider) {
+public class GSQLCommand extends StoredQueryCommand {
+    public GSQLCommand(IRunrepArgumentProvider argumentProvider) {
         super(argumentProvider);
     }
 
     @Override
     protected String getReportCommand() {
-        // get and clean the RSL name
-        final String rslNameProperty = argumentProvider.getRSLName();
-        final String rslName = rslNameProperty.endsWith(".rsl")
-                ? rslNameProperty.substring(0, rslNameProperty.length() - 4) : rslNameProperty;
-
         // get the output format
         final String outputFormat = argumentProvider.getOutputFormat();
 
-        // format the temporary filename
+        // get the output filename
         final String outputFilename = getOuputFilename();
         final String reportParameters = getReportParameters();
 
+        // get the gsql query
+        final String gsqlQuery = argumentProvider.getGSQLQuery();
+
         if (StringUtils.isNotBlank(reportParameters)) {
-            return String.format("read \"%s.rsl\"%nrunfile \"%s\" -f %s -o \"%s\" %s", rslName, rslName, outputFormat,
-                    outputFilename, reportParameters);
+            return String.format("rungsql -f %s -o \"%s\" %s%n%s", outputFormat, outputFilename, reportParameters,
+                    gsqlQuery);
         } else {
-            return String.format("read \"%s.rsl\"%nrunfile \"%s\" -f %s -o \"%s\"", rslName, rslName, outputFormat,
-                    outputFilename);
+            return String.format("rungsql -f %s -o \"%s\"%n%s", outputFormat, outputFilename, gsqlQuery);
         }
+    }
+
+    @Override
+    public void validate() {
+        argumentProvider.validate();
+
+        final var gsqlQuery = argumentProvider.getGSQLQuery();
+        if (StringUtils.isBlank(gsqlQuery))
+            throw new IllegalArgumentException("`gsqlQuery` cannot be null");
+
+        if (!gsqlQuery.endsWith(";"))
+            throw new IllegalArgumentException("`gsqlQuery` must end with a `;` character");
     }
 }

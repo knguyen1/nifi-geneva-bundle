@@ -25,6 +25,8 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processors.standard.ssh.SSHClientProvider;
 
+import com.github.knguyen.processors.geneva.command.ICommand;
+
 import net.schmizz.sshj.sftp.RemoteFile;
 
 public interface RemoteCommandExecutor extends Closeable {
